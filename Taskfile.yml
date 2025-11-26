@@ -1,0 +1,87 @@
+version: '3'
+
+vars:
+  DOTNET_ENVIRONMENT: Development
+
+colors:
+  reset: "\033[0m"
+  red: "\033[31m"
+  green: "\033[32m"
+  yellow: "\033[33m"
+  blue: "\033[34m"
+  magenta: "\033[35m"
+  cyan: "\033[36m"
+
+tasks:
+
+  # ----------------------------------
+  # Start PostgreSQL dev database
+  # ----------------------------------
+  up-db:
+    desc: "Start PostgreSQL development database"
+    cmds:
+      - docker compose up -d
+
+  # ----------------------------------
+  # Run .NET backend
+  # ----------------------------------
+  api:
+    desc: "Run .NET backend"
+    dir: backend/src/Domino.Backend
+    cmds:
+      - task: api-restore
+      - |
+        if [ "${WATCH}" = "true" ]; then
+          echo -e "${cyan}Starting .NET backend in WATCH mode...${reset}"
+          dotnet watch run | sed "s/^/${cyan}[API]${reset} /"
+        else
+          echo -e "${cyan}Starting .NET backend...${reset}"
+          dotnet run | sed "s/^/${cyan}[API]${reset} /"
+        fi
+
+  api-restore:
+    desc: "Restore .NET dependencies"
+    dir: backend/src/Domino.Backend
+    cmds:
+      - dotnet restore
+
+  # ----------------------------------
+  # Run React frontend
+  # ----------------------------------
+  client:
+    desc: "Run React frontend"
+    dir: frontend
+    cmds:
+      - npm install
+      - |
+        if [ "${WATCH}" = "true" ]; then
+          echo -e "${green}Starting React frontend in WATCH mode...${reset}"
+          npm run dev 2>&1 | sed "s/^/${green}[CLIENT]${reset} /"
+        else
+          echo -e "${green}Starting React frontend...${reset}"
+          npm start 2>&1 | sed "s/^/${green}[CLIENT]${reset} /"
+        fi
+
+  # ----------------------------------
+  # Tail PostgreSQL logs
+  # ----------------------------------
+  db-logs:
+    desc: "Tail PostgreSQL container logs"
+    cmds:
+      - docker logs -f dev-postgres | sed "s/^/${yellow}[DB]${reset} /"
+
+  # ----------------------------------
+  # Full dev environment
+  # ----------------------------------
+  dev:
+    desc: "Start DB, backend, frontend with colorized logs"
+    preconditions:
+      - "docker --version || { echo 'Docker is required!'; exit 1; }"
+    cmds:
+      - task: up-db
+      - |
+        # Run backend, frontend, and logs in background with colorized output
+        task api &
+        task client &
+        task db-logs &
+        wait
