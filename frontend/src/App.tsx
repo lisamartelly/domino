@@ -10,7 +10,7 @@ function App() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("http://localhost:5297/weatherforecast");
+      const response = await fetch("/api/weatherforecast");
       const data = await response.json();
       setData(data);
     };
