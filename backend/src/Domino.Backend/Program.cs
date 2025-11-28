@@ -9,6 +9,10 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add PostgreSQL services
+builder.Services.AddDbContext<DominoDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

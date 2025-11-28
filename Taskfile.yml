@@ -56,6 +56,21 @@ tasks:
         fi
 
   # ----------------------------------
+  # Run frontend tests
+  # ----------------------------------
+  client-test:
+    desc: "Run React frontend tests"
+    dir: frontend
+    cmds:
+      - npm run test:run
+
+  client-test-watch:
+    desc: "Run React frontend tests in watch mode"
+    dir: frontend
+    cmds:
+      - npm test
+
+  # ----------------------------------
   # Tail PostgreSQL logs
   # ----------------------------------
   db-logs:
