@@ -2,16 +2,19 @@ import { useState, useEffect } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
-import type { WeatherForecast } from "./weather";
 
 function App() {
   const [count, setCount] = useState(0);
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<healthData|null>(null);
+
+  interface healthData {
+    status: string;
+  };
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch("/api/weatherforecast");
-      const data = await response.json();
+      const response = await fetch("/api/health");
+      const data: healthData = await response.json();
       setData(data);
     };
     fetchData();
@@ -38,13 +41,9 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
-      {data.map((item: WeatherForecast) => (
-        <div key={item.date}>
-          <h2>{item.date}</h2>
-          <p>{item.temperatureC}</p>
-          <p>{item.summary}</p>
-        </div>
-      ))}
+      {
+        data && data.status
+      }
     </>
   );
 }

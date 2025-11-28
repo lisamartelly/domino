@@ -3,22 +3,13 @@ version: '3'
 vars:
   DOTNET_ENVIRONMENT: Development
 
-colors:
-  reset: "\033[0m"
-  red: "\033[31m"
-  green: "\033[32m"
-  yellow: "\033[33m"
-  blue: "\033[34m"
-  magenta: "\033[35m"
-  cyan: "\033[36m"
-
 tasks:
 
   # ----------------------------------
   # Start PostgreSQL dev database
   # ----------------------------------
   up-db:
-    desc: "Start PostgreSQL development database"
+    desc: "Start PostgreSQL development database container"
     cmds:
       - docker compose up -d
 
@@ -28,15 +19,16 @@ tasks:
   api:
     desc: "Run .NET backend"
     dir: backend/src/Domino.Backend
+    ignore_error: true
     cmds:
       - task: api-restore
       - |
         if [ "${WATCH}" = "true" ]; then
-          echo -e "${cyan}Starting .NET backend in WATCH mode...${reset}"
-          dotnet watch run | sed "s/^/${cyan}[API]${reset} /"
+          echo "Starting .NET backend in WATCH mode..."
+          DOTNET_ENVIRONMENT={{.DOTNET_ENVIRONMENT}} dotnet watch run
         else
-          echo -e "${cyan}Starting .NET backend...${reset}"
-          dotnet run | sed "s/^/${cyan}[API]${reset} /"
+          echo "Starting .NET backend..."
+          DOTNET_ENVIRONMENT={{.DOTNET_ENVIRONMENT}} dotnet run
         fi
 
   api-restore:
@@ -51,37 +43,69 @@ tasks:
   client:
     desc: "Run React frontend"
     dir: frontend
+    ignore_error: true
     cmds:
       - npm install
       - |
         if [ "${WATCH}" = "true" ]; then
-          echo -e "${green}Starting React frontend in WATCH mode...${reset}"
-          npm run dev 2>&1 | sed "s/^/${green}[CLIENT]${reset} /"
+          echo "Starting React frontend in WATCH mode..."
+          npm run dev
         else
-          echo -e "${green}Starting React frontend...${reset}"
-          npm start 2>&1 | sed "s/^/${green}[CLIENT]${reset} /"
+          echo "Starting React frontend..."
+          npm start
         fi
+
+  # ----------------------------------
+  # Run frontend tests
+  # ----------------------------------
+  client-test:
+    desc: "Run React frontend tests"
+    dir: frontend
+    cmds:
+      - npm run test:run
+
+  client-test-watch:
+    desc: "Run React frontend tests in watch mode"
+    dir: frontend
+    cmds:
+      - npm test
 
   # ----------------------------------
   # Tail PostgreSQL logs
   # ----------------------------------
   db-logs:
     desc: "Tail PostgreSQL container logs"
+    ignore_error: true
     cmds:
-      - docker logs -f dev-postgres | sed "s/^/${yellow}[DB]${reset} /"
+      - docker logs -f dev-postgres
 
   # ----------------------------------
   # Full dev environment
   # ----------------------------------
   dev:
-    desc: "Start DB, backend, frontend with colorized logs"
+    desc: "Start DB, backend, frontend, and PostgreSQL logs"
     preconditions:
       - "docker --version || { echo 'Docker is required!'; exit 1; }"
     cmds:
       - task: up-db
       - |
-        # Run backend, frontend, and logs in background with colorized output
         task api &
         task client &
         task db-logs &
-        wait
+        wait || true
+
+  # ----------------------------------
+  # Start without hot reload
+  # ----------------------------------
+  start:
+    desc: "Start backend and frontend (no watch)"
+    cmds:
+      - WATCH=false task dev
+
+  # ----------------------------------
+  # Start with hot reload
+  # ----------------------------------
+  watch:
+    desc: "Start backend and frontend with watch mode"
+    cmds:
+      - WATCH=true task dev

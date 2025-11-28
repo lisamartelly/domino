@@ -7,5 +7,5 @@ namespace Domino.Backend.Health;
 public class HealthController : ControllerBase
 {
     [HttpGet]
-    public IActionResult GetHealthStatus() => Ok(new { status = "Healthy" });
+    public IActionResult GetHealthStatus() => Ok(new HealthResponse("Healthy"));
 }
