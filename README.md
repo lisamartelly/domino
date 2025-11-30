@@ -144,7 +144,7 @@ domino/
 
 ### Backend API
 
-The .NET backend runs on `https://localhost:5001` (or `http://localhost:5000`) by default.
+The .NET backend runs on `http://localhost:5297` by default.
 
 **Swagger UI:** Available at `/swagger` in development mode.
 
@@ -163,6 +163,32 @@ PostgreSQL runs in Docker and is accessible at:
 - **Database:** `domino`
 - **User:** `user`
 - **Password:** `password`
+
+### Migrations
+
+Database migrations are managed with Entity Framework Core tools.
+
+**Install EF Core tools (one-time setup):**
+
+```bash
+dotnet tool install --global dotnet-ef
+```
+
+**Common commands** (run from `backend/src/Domino.Backend`):
+
+```bash
+# Create a new migration
+dotnet ef migrations add <MigrationName>
+
+# Apply pending migrations
+dotnet ef database update
+
+# Remove the last migration (if not applied)
+dotnet ef migrations remove
+
+# List all migrations
+dotnet ef migrations list
+```
 
 ## Testing
 
