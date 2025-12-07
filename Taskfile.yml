@@ -38,6 +38,21 @@ tasks:
       - dotnet restore
 
   # ----------------------------------
+  # Lint .NET backend
+  # ----------------------------------
+  api-lint:
+    desc: "Check .NET code for lint errors"
+    dir: backend
+    cmds:
+      - dotnet format --verify-no-changes --verbosity diagnostic
+
+  api-lint-fix:
+    desc: "Auto-fix .NET lint errors"
+    dir: backend
+    cmds:
+      - dotnet format
+
+  # ----------------------------------
   # Run React frontend
   # ----------------------------------
   client:
@@ -69,6 +84,36 @@ tasks:
     dir: frontend
     cmds:
       - npm test
+
+  # ----------------------------------
+  # Lint React frontend
+  # ----------------------------------
+  client-lint:
+    desc: "Check React code for lint errors"
+    dir: frontend
+    cmds:
+      - source ~/.nvm/nvm.sh && nvm use && npm run lint
+
+  client-lint-fix:
+    desc: "Auto-fix React lint errors"
+    dir: frontend
+    cmds:
+      - source ~/.nvm/nvm.sh && nvm use && npm run lint:fix
+
+  # ----------------------------------
+  # Lint all projects
+  # ----------------------------------
+  lint:
+    desc: "Lint backend and frontend"
+    cmds:
+      - task: api-lint
+      - task: client-lint
+
+  lint-fix:
+    desc: "Auto-fix lint errors in backend and frontend"
+    cmds:
+      - task: api-lint-fix
+      - task: client-lint-fix
 
   # ----------------------------------
   # Tail PostgreSQL logs

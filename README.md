@@ -110,6 +110,12 @@ task start
 | `task client` | Run React frontend only |
 | `task client-test` | Run React frontend tests |
 | `task client-test-watch` | Run React frontend tests in watch mode |
+| `task api-lint` | Check .NET code for lint errors |
+| `task api-lint-fix` | Auto-fix .NET lint errors |
+| `task client-lint` | Check React code for lint errors |
+| `task client-lint-fix` | Auto-fix React lint errors |
+| `task lint` | Lint backend and frontend |
+| `task lint-fix` | Auto-fix lint errors in both |
 | `task db-logs` | Tail PostgreSQL container logs |
 | `task api-restore` | Restore .NET dependencies |
 
