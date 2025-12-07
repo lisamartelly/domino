@@ -38,8 +38,3 @@ public class UserModel
     [ForeignKey("RoleId")]
     public required RoleModel Role { get; set; }
 }
-
-// things we need to check in this
-// does the required word make the column non nullable
-// does the id autoincrement on its own
-// does isActive default to true with this

@@ -24,5 +24,5 @@ public class HealthControllerTest
             var value = okResult.Value as HealthResponse;
             Assert.That(value!.Status, Is.EqualTo("Healthy"), "Expected status to be 'Healthy'");
         }
-    }   
+    }
 }
