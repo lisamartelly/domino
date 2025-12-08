@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -8,16 +9,8 @@ namespace Domino.Backend.Application.Users;
 
 [Table("users")]
 [PrimaryKey(nameof(Id))]
-public class UserModel
+public class UserModel : IdentityUser
 {
-    [Key]
-    [Column("id")]
-    public int Id { get; }
-
-    [Column("email")]
-    [MaxLength(100)]
-    public required string Email { get; set; }
-
     [Column("first_name")]
     [MaxLength(100)]
     public required string FirstName { get; set; }
@@ -33,8 +26,4 @@ public class UserModel
     [DefaultValue(true)]
     public bool IsActive { get; set; } = true;
 
-    [Column("role_id")]
-    public int RoleId { get; set; }
-    [ForeignKey("RoleId")]
-    public required RoleModel Role { get; set; }
 }

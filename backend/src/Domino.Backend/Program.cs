@@ -1,4 +1,6 @@
 using Domino.Backend;
+using Domino.Backend.Application.Users;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +17,11 @@ builder.Services.AddSwaggerGen();
 // Add PostgreSQL services
 builder.Services.AddDbContext<DominoDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Add Identity Framework services
+builder.Services.AddIdentity<UserModel, IdentityRole>()
+    .AddEntityFrameworkStores<DominoDbContext>()
+    .AddDefaultTokenProviders();
 
 var app = builder.Build();
 
