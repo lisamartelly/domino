@@ -156,6 +156,10 @@ function Login() {
             Don't have an account?{" "}
             <a
               href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent("switchToRegister"));
+              }}
               className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
             >
               Sign up
