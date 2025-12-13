@@ -1,10 +1,9 @@
-version: '3'
+version: "3"
 
 vars:
   DOTNET_ENVIRONMENT: Development
 
 tasks:
-
   # ----------------------------------
   # Start PostgreSQL dev database
   # ----------------------------------
@@ -36,6 +35,21 @@ tasks:
     dir: backend/src/Domino.Backend
     cmds:
       - dotnet restore
+
+  # ----------------------------------
+  # Run .NET backend tests
+  # ----------------------------------
+  api-test:
+    desc: "Run .NET backend tests"
+    dir: backend
+    cmds:
+      - dotnet test
+
+  api-test-watch:
+    desc: "Run .NET backend tests in watch mode"
+    dir: backend
+    cmds:
+      - dotnet watch test
 
   # ----------------------------------
   # Lint .NET backend
