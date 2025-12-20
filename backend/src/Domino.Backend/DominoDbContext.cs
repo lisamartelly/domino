@@ -15,7 +15,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         builder.Entity<UserModel>(entity =>
         {
             entity.ToTable("users");
-            
+
             // IdentityUser properties
             entity.Property(e => e.Id)
                 .HasColumnName("id");
@@ -53,7 +53,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         builder.Entity<IdentityRole>(entity =>
         {
             entity.ToTable("roles");
-            
+
             entity.Property(e => e.Id)
                 .HasColumnName("id");
             entity.Property(e => e.Name)
@@ -68,7 +68,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         builder.Entity<IdentityUserRole<string>>(entity =>
         {
             entity.ToTable("user_roles");
-            
+
             entity.Property(e => e.UserId)
                 .HasColumnName("user_id");
             entity.Property(e => e.RoleId)
@@ -79,7 +79,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         builder.Entity<IdentityUserClaim<string>>(entity =>
         {
             entity.ToTable("user_claims");
-            
+
             entity.Property(e => e.Id)
                 .HasColumnName("id");
             entity.Property(e => e.UserId)
@@ -94,7 +94,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         builder.Entity<IdentityUserLogin<string>>(entity =>
         {
             entity.ToTable("user_logins");
-            
+
             entity.Property(e => e.LoginProvider)
                 .HasColumnName("login_provider");
             entity.Property(e => e.ProviderKey)
@@ -109,7 +109,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         builder.Entity<IdentityUserToken<string>>(entity =>
         {
             entity.ToTable("user_tokens");
-            
+
             entity.Property(e => e.UserId)
                 .HasColumnName("user_id");
             entity.Property(e => e.LoginProvider)
@@ -124,7 +124,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         builder.Entity<IdentityRoleClaim<string>>(entity =>
         {
             entity.ToTable("role_claims");
-            
+
             entity.Property(e => e.Id)
                 .HasColumnName("id");
             entity.Property(e => e.RoleId)

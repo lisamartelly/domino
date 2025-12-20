@@ -3,34 +3,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
-namespace Domino.Backend.Tests;
+namespace Domino.Backend.Tests.UsersTests.AuthControllerTests;
 
-[TestFixture]
-public class AuthControllerTest
+public class RegisterTests : AuthControllerTestsBase
 {
-    private Mock<UserManager<UserModel>> _userManagerMock = null!;
-    private AuthController _controller = null!;
-
-    [SetUp]
-    public void SetUp()
-    {
-        var store = new Mock<IUserStore<UserModel>>();
-        _userManagerMock = new Mock<UserManager<UserModel>>(
-            store.Object,
-            null!,
-            null!,
-            null!,
-            null!,
-            null!,
-            null!,
-            null!,
-            null!
-        );
-        _controller = new AuthController(_userManagerMock.Object);
-    }
-
     [Test]
-    public async Task Register_WithValidRequest_ReturnsOkWithSuccessResponse()
+    public async Task WithValidRequest_ReturnsOkWithSuccessResponse()
     {
         // Arrange
         var request = new RegisterRequest
@@ -42,12 +20,12 @@ public class AuthControllerTest
             Birthday = new DateOnly(1990, 1, 1)
         };
 
-        _userManagerMock
+        UserManagerMock
             .Setup(x => x.CreateAsync(It.IsAny<UserModel>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Success);
 
         // Act
-        var result = await _controller.Register(request);
+        var result = await AuthController.Register(request);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -60,7 +38,7 @@ public class AuthControllerTest
             Assert.That(response.Message, Is.EqualTo("User registered successfully"), "Expected success message");
         }
 
-        _userManagerMock.Verify(
+        UserManagerMock.Verify(
             x => x.CreateAsync(
                 It.Is<UserModel>(u =>
                     u.Email == request.Email &&
@@ -78,7 +56,7 @@ public class AuthControllerTest
     }
 
     [Test]
-    public async Task Register_WithInvalidModelState_ReturnsBadRequest()
+    public async Task WithInvalidModelState_ReturnsBadRequest()
     {
         // Arrange
         var request = new RegisterRequest
@@ -90,11 +68,11 @@ public class AuthControllerTest
             Birthday = new DateOnly(1990, 1, 1)
         };
 
-        _controller.ModelState.AddModelError("Email", "The Email field is not a valid e-mail address.");
-        _controller.ModelState.AddModelError("Password", "The Password field must be at least 6 characters.");
+        AuthController.ModelState.AddModelError("Email", "The Email field is not a valid e-mail address.");
+        AuthController.ModelState.AddModelError("Password", "The Password field must be at least 6 characters.");
 
         // Act
-        var result = await _controller.Register(request);
+        var result = await AuthController.Register(request);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -108,7 +86,7 @@ public class AuthControllerTest
             Assert.That(response.Errors, Is.Not.Empty, "Expected errors to not be empty");
         }
 
-        _userManagerMock.Verify(
+        UserManagerMock.Verify(
             x => x.CreateAsync(It.IsAny<UserModel>(), It.IsAny<string>()),
             Times.Never,
             "Expected CreateAsync to not be called when model is invalid"
@@ -116,7 +94,7 @@ public class AuthControllerTest
     }
 
     [Test]
-    public async Task Register_WhenUserCreationFails_ReturnsBadRequestWithErrors()
+    public async Task WhenUserCreationFails_ReturnsBadRequestWithErrors()
     {
         // Arrange
         var request = new RegisterRequest
@@ -133,12 +111,12 @@ public class AuthControllerTest
             new IdentityError { Code = "DuplicateEmail", Description = "Email already exists" }
         };
 
-        _userManagerMock
+        UserManagerMock
             .Setup(x => x.CreateAsync(It.IsAny<UserModel>(), It.IsAny<string>()))
             .ReturnsAsync(IdentityResult.Failed(identityErrors));
 
         // Act
-        var result = await _controller.Register(request);
+        var result = await AuthController.Register(request);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -168,13 +146,13 @@ public class AuthControllerTest
         };
 
         UserModel? createdUser = null;
-        _userManagerMock
+        UserManagerMock
             .Setup(x => x.CreateAsync(It.IsAny<UserModel>(), It.IsAny<string>()))
             .Callback<UserModel, string>((user, password) => createdUser = user)
             .ReturnsAsync(IdentityResult.Success);
 
         // Act
-        await _controller.Register(request);
+        await AuthController.Register(request);
 
         // Assert
         using (Assert.EnterMultipleScope())
@@ -189,4 +167,3 @@ public class AuthControllerTest
         }
     }
 }
-

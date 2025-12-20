@@ -4,7 +4,6 @@ using System.Text;
 using Domino.Backend;
 using Domino.Backend.Application.Users;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -31,18 +30,18 @@ builder.Services.AddIdentity<UserModel, IdentityRole>()
     .AddDefaultTokenProviders();
 
 // Add RefreshTokenService
-builder.Services.AddScoped<RefreshTokenService>();
+builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 
 // Configure Authentication with Cookie scheme
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
-            ? CookieSecurePolicy.None 
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            ? CookieSecurePolicy.None
             : CookieSecurePolicy.Always;
-        options.Cookie.SameSite = builder.Environment.IsDevelopment() 
-            ? SameSiteMode.Lax 
+        options.Cookie.SameSite = builder.Environment.IsDevelopment()
+            ? SameSiteMode.Lax
             : SameSiteMode.None;
         options.Cookie.Path = "/";
         options.Events.OnValidatePrincipal = async context =>
@@ -58,9 +57,9 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             try
             {
                 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-                var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
+                var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY")
                     ?? jwtSettings["SecretKey"];
-                    
+
                 if (string.IsNullOrEmpty(secretKey))
                 {
                     // Secret key not configured - can't validate, but don't reject
@@ -68,13 +67,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
                 }
 
                 var tokenHandler = new JwtSecurityTokenHandler();
-                
+
                 // Check if token is readable before trying to validate
                 if (!tokenHandler.CanReadToken(token))
                 {
                     return;
                 }
-                
+
                 var key = Encoding.UTF8.GetBytes(secretKey);
 
                 var validationParameters = new TokenValidationParameters
@@ -89,8 +88,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
                     ClockSkew = TimeSpan.Zero
                 };
 
-                var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
-                
+                var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
+
                 // Verify user still exists and is active
                 var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (!string.IsNullOrEmpty(userId))
@@ -98,7 +97,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
                     using var scope = context.HttpContext.RequestServices.CreateScope();
                     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<UserModel>>();
                     var user = await userManager.FindByIdAsync(userId);
-                    
+
                     if (user == null || !user.IsActive)
                     {
                         // User doesn't exist or is inactive - reject
@@ -114,7 +113,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             {
                 // Token expired - this is expected, don't reject (let refresh handle it)
                 // Just return without setting principal - [Authorize] will return 401
-                return;
             }
             catch (SecurityTokenException)
             {
@@ -129,23 +127,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             }
         };
     });
-
-// Configure CORS
-var allowedOrigins = builder.Environment.IsDevelopment()
-    ? new[] { "http://localhost:5173" } // Vite dev server
-    : builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
-        ?? Array.Empty<string>();
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins(allowedOrigins)
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
-    });
-});
 
 // Configure Rate Limiting
 builder.Services.AddRateLimiter(options =>
@@ -176,9 +157,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// CORS must come before authentication
-app.UseCors("AllowFrontend");
 
 // Rate limiting
 app.UseRateLimiter();
