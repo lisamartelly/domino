@@ -37,6 +37,7 @@ describe("api service", () => {
 
       expect(global.fetch).toHaveBeenCalledWith("/api/auth/register", {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
