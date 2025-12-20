@@ -3,6 +3,18 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Login from "../src/components/Login";
 
+// Mock the useAuth hook
+vi.mock("../src/contexts/AuthContext", () => ({
+  useAuth: () => ({
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    checkAuth: vi.fn(),
+  }),
+}));
+
 describe("Login", () => {
   beforeEach(() => {
     vi.clearAllMocks();
