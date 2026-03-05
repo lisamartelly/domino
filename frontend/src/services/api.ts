@@ -28,6 +28,23 @@ export interface LoginResponse {
   success: boolean;
   message?: string;
   user?: UserDto;
+  accessToken?: string;
+}
+
+// In-memory token storage (cleared on page refresh, restored via refresh token)
+let accessToken: string | null = null;
+
+// Token management functions
+export function setAccessToken(token: string | null): void {
+  accessToken = token;
+}
+
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
+export function clearAccessToken(): void {
+  accessToken = null;
 }
 
 // Promise queue to prevent multiple simultaneous refresh attempts
@@ -38,13 +55,20 @@ async function fetchWithAuth(
   url: string,
   options: RequestInit = {}
 ): Promise<Response> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+
+  // Add Authorization header if we have a token
+  if (accessToken) {
+    headers["Authorization"] = `Bearer ${accessToken}`;
+  }
+
   const defaultOptions: RequestInit = {
     ...options,
-    credentials: "include", // Always include credentials for cookies
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    credentials: "include", // Still include credentials for refresh token cookie
+    headers,
   };
 
   let response = await fetch(url, defaultOptions);
@@ -55,10 +79,23 @@ async function fetchWithAuth(
     const refreshed = await refreshTokenIfNeeded();
 
     if (refreshed) {
-      // Retry original request after successful refresh
-      response = await fetch(url, defaultOptions);
+      // Update headers with new token and retry
+      const retryHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...(options.headers as Record<string, string>),
+      };
+      if (accessToken) {
+        retryHeaders["Authorization"] = `Bearer ${accessToken}`;
+      }
+
+      response = await fetch(url, {
+        ...options,
+        credentials: "include",
+        headers: retryHeaders,
+      });
     } else {
-      // Refresh failed, user needs to login again
+      // Refresh failed, clear token and throw
+      clearAccessToken();
       throw new Error("Authentication failed. Please login again.");
     }
   }
@@ -66,7 +103,12 @@ async function fetchWithAuth(
   return response;
 }
 
-// Refresh token function with promise queue
+// Refresh the access token using the refresh token cookie.
+// Exported so AuthContext can call it on page load to restore the session.
+export async function tryRefreshToken(): Promise<boolean> {
+  return refreshTokenIfNeeded();
+}
+
 async function refreshTokenIfNeeded(): Promise<boolean> {
   // If refresh is already in progress, wait for it
   if (refreshPromise) {
@@ -85,6 +127,11 @@ async function refreshTokenIfNeeded(): Promise<boolean> {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        // Store new access token from response
+        if (data.accessToken) {
+          setAccessToken(data.accessToken);
+        }
         return true;
       }
       return false;
@@ -135,6 +182,8 @@ export const logoutUser = async (): Promise<void> => {
   await fetchWithAuth("/api/auth/logout", {
     method: "POST",
   });
+  // Clear the access token from memory
+  clearAccessToken();
 };
 
 export const getCurrentUser = async (): Promise<UserDto> => {

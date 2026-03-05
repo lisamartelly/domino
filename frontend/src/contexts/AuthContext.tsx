@@ -11,6 +11,10 @@ import {
   loginUser,
   logoutUser,
   getCurrentUser,
+  tryRefreshToken,
+  getAccessToken,
+  setAccessToken,
+  clearAccessToken,
   type UserDto,
   type LoginRequest,
 } from "../services/api";
@@ -33,6 +37,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const checkAuth = useCallback(async () => {
     try {
       setIsLoading(true);
+      // On page reload the in-memory token is gone; restore the session
+      // via the refresh token cookie before calling /me
+      if (!getAccessToken()) {
+        const refreshed = await tryRefreshToken();
+        if (!refreshed) {
+          setUser(null);
+          return;
+        }
+      }
       const currentUser = await getCurrentUser();
       setUser(currentUser);
     } catch (error) {
@@ -50,7 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
       const response = await loginUser(credentials);
-      if (response.success && response.user) {
+      if (response.success && response.user && response.accessToken) {
+        // Store access token in memory
+        setAccessToken(response.accessToken);
         setUser(response.user);
         // Return success - let component handle navigation
         return;
@@ -59,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error: any) {
       setUser(null);
+      clearAccessToken();
       // Extract error message from various error formats
       const errorMessage =
         error?.message ||
@@ -76,8 +92,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
+      clearAccessToken();
       setUser(null);
-      // Return - let component handle navigation
     }
   }, []);
 

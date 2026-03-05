@@ -11,26 +11,11 @@ namespace Domino.Backend.Application.Users;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController(UserManager<UserModel> userManager, RefreshTokenService refreshTokenService, IConfiguration configuration) : ControllerBase
 {
-    private readonly UserManager<UserModel> _userManager;
-    private readonly SignInManager<UserModel> _signInManager;
-    private readonly RefreshTokenService _refreshTokenService;
-    private readonly IConfiguration _configuration;
-
-    public AuthController(
-        UserManager<UserModel> userManager,
-        SignInManager<UserModel> signInManager,
-        RefreshTokenService refreshTokenService,
-        IConfiguration configuration)
-    {
-        _userManager = userManager;
-        _signInManager = signInManager;
-        _refreshTokenService = refreshTokenService;
-        _configuration = configuration;
-    }
 
     [HttpPost("register")]
+    [EnableRateLimiting("RegisterPolicy")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         if (!ModelState.IsValid)
@@ -58,7 +43,7 @@ public class AuthController : ControllerBase
             IsActive = true
         };
 
-        var result = await _userManager.CreateAsync(user, request.Password);
+        var result = await userManager.CreateAsync(user, request.Password);
 
         if (!result.Succeeded)
         {
@@ -85,103 +70,98 @@ public class AuthController : ControllerBase
         try
         {
             if (!ModelState.IsValid)
-        {
-            return BadRequest(new LoginResponse
             {
-                Success = false,
-                Message = "Invalid email or password"
-            });
-        }
+                return BadRequest(new LoginResponse
+                {
+                    Success = false,
+                    Message = "Invalid email or password"
+                });
+            }
 
-        var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user == null)
-        {
-            // Generic error message to prevent user enumeration
-            return Unauthorized(new LoginResponse
+            var user = await userManager.FindByEmailAsync(request.Email);
+            if (user == null)
             {
-                Success = false,
-                Message = "Invalid email or password"
-            });
-        }
+                // Generic error message to prevent user enumeration
+                return Unauthorized(new LoginResponse
+                {
+                    Success = false,
+                    Message = "Invalid email or password"
+                });
+            }
 
-        // Check if user is active
-        if (!user.IsActive)
-        {
-            return Unauthorized(new LoginResponse
+            // Check if user is active
+            if (!user.IsActive)
             {
-                Success = false,
-                Message = "Invalid email or password"
-            });
-        }
+                return Unauthorized(new LoginResponse
+                {
+                    Success = false,
+                    Message = "Invalid email or password"
+                });
+            }
 
-        // Check for account lockout
-        if (await _userManager.IsLockedOutAsync(user))
-        {
-            return Unauthorized(new LoginResponse
+            // Check for account lockout
+            if (await userManager.IsLockedOutAsync(user))
             {
-                Success = false,
-                Message = "Account is locked. Please try again later."
-            });
-        }
+                return Unauthorized(new LoginResponse
+                {
+                    Success = false,
+                    Message = "Account is locked. Please try again later."
+                });
+            }
 
-        // Validate password
-        var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
-        if (!passwordValid)
-        {
-            return Unauthorized(new LoginResponse
+            var passwordValid = await userManager.CheckPasswordAsync(user, request.Password);
+            if (!passwordValid)
             {
-                Success = false,
-                Message = "Invalid email or password"
-            });
-        }
+                _ =await userManager.AccessFailedAsync(user);
+                return Unauthorized(new LoginResponse
+                {
+                    Success = false,
+                    Message = "Invalid email or password"
+                });
+            }
 
-        // Generate access token
-        string accessToken;
-        try
-        {
-            accessToken = GenerateAccessToken(user);
+            _ = await userManager.ResetAccessFailedCountAsync(user);
+
+            var accessToken = GenerateAccessToken(user);
+
+            // Generate refresh token
+            var refreshToken = refreshTokenService.GenerateRefreshToken();
+            var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(
+                configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7)
+            );
+
+            // Store refresh token
+            await refreshTokenService.StoreRefreshTokenAsync(user, refreshToken, refreshTokenExpiresAt);
+
+            Response.Cookies.Append("refreshToken", $"{user.Id}:{refreshToken}", GetRefreshTokenCookieOptions());
+
+            // Return access token in response body (stored in memory by frontend)
+            return Ok(new LoginResponse
+            {
+                Success = true,
+                Message = "Login successful",
+                AccessToken = accessToken,
+                User = new UserDto
+                {
+                    Id = user.Id,
+                    Email = user.Email!,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName
+                }
+            });
         }
         catch (InvalidOperationException)
         {
-            // Log the error and return 500 with a generic message
-            // In production, log to a proper logging service
+            // JWT configuration error
             return StatusCode(500, new LoginResponse
             {
                 Success = false,
                 Message = "An error occurred during authentication. Please try again later."
             });
         }
-
-        // Generate refresh token
-        var refreshToken = _refreshTokenService.GenerateRefreshToken();
-        var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(
-            _configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7)
-        );
-
-        // Store refresh token
-        await _refreshTokenService.StoreRefreshTokenAsync(user, refreshToken, refreshTokenExpiresAt);
-
-        // Set cookies
-        Response.Cookies.Append("accessToken", accessToken, GetCookieOptions(isRefreshToken: false));
-        Response.Cookies.Append("refreshToken", refreshToken, GetCookieOptions(isRefreshToken: true));
-
-        return Ok(new LoginResponse
-        {
-            Success = true,
-            Message = "Login successful",
-            User = new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email!,
-                FirstName = user.FirstName,
-                LastName = user.LastName
-            }
-        });
-        }
         catch (Exception)
         {
             // Log the exception (in production, use proper logging)
-            // For now, return a generic error to prevent information leakage
             return StatusCode(500, new LoginResponse
             {
                 Success = false,
@@ -194,25 +174,23 @@ public class AuthController : ControllerBase
     [EnableRateLimiting("RefreshPolicy")]
     public async Task<IActionResult> Refresh()
     {
-        // Read refresh token from cookie
-        var refreshToken = Request.Cookies["refreshToken"];
-        
-        // Also try reading from Authorization header as fallback (though we prefer cookies)
-        if (string.IsNullOrEmpty(refreshToken))
-        {
-            var authHeader = Request.Headers["Authorization"].ToString();
-            if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-            {
-                refreshToken = authHeader.Substring("Bearer ".Length).Trim();
-            }
-        }
-        
-        if (string.IsNullOrEmpty(refreshToken))
+        var refreshCookie = Request.Cookies["refreshToken"];
+        if (string.IsNullOrEmpty(refreshCookie))
         {
             return Unauthorized(new { message = "Refresh token not found" });
         }
 
-        var (isValid, user, tokenFamilyId) = await _refreshTokenService.ValidateRefreshTokenAsync(refreshToken);
+        // Cookie format: "userId:token"
+        var separatorIndex = refreshCookie.IndexOf(':');
+        if (separatorIndex < 1)
+        {
+            return Unauthorized(new { message = "Invalid refresh token format" });
+        }
+
+        var userId = refreshCookie[..separatorIndex];
+        var refreshToken = refreshCookie[(separatorIndex + 1)..];
+
+        var (isValid, user, tokenFamilyId) = await refreshTokenService.ValidateRefreshTokenAsync(refreshToken, userId);
         if (!isValid || user == null)
         {
             return Unauthorized(new { message = "Invalid or expired refresh token" });
@@ -221,7 +199,7 @@ public class AuthController : ControllerBase
         // Check if user is still active
         if (!user.IsActive)
         {
-            await _refreshTokenService.RevokeRefreshTokenAsync(user);
+            await refreshTokenService.RevokeRefreshTokenAsync(user);
             return Unauthorized(new { message = "Account is inactive" });
         }
 
@@ -229,131 +207,78 @@ public class AuthController : ControllerBase
         var newAccessToken = GenerateAccessToken(user);
 
         // Optionally rotate refresh token (recommended for security)
-        var newRefreshToken = _refreshTokenService.GenerateRefreshToken();
+        var newRefreshToken = refreshTokenService.GenerateRefreshToken();
         var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(
-            _configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7)
+            configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7)
         );
 
-        // Store new refresh token with same family ID
-        await _refreshTokenService.StoreRefreshTokenAsync(user, newRefreshToken, refreshTokenExpiresAt, tokenFamilyId);
+        // Store new refresh token (overwrites old one via Identity's SetAuthenticationTokenAsync)
+        await refreshTokenService.StoreRefreshTokenAsync(user, newRefreshToken, refreshTokenExpiresAt, tokenFamilyId);
 
-        // Revoke old refresh token
-        await _refreshTokenService.RevokeRefreshTokenAsync(user);
+        Response.Cookies.Append("refreshToken", $"{user.Id}:{newRefreshToken}", GetRefreshTokenCookieOptions());
 
-        // Set new cookies
-        Response.Cookies.Append("accessToken", newAccessToken, GetCookieOptions(isRefreshToken: false));
-        Response.Cookies.Append("refreshToken", newRefreshToken, GetCookieOptions(isRefreshToken: true));
-
-        return Ok(new { message = "Token refreshed successfully" });
+        // Return new access token in response body
+        return Ok(new { message = "Token refreshed successfully", accessToken = newAccessToken });
     }
 
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        // Try to get user from token if available, but don't require authentication
-        // This makes logout idempotent - it works even if already logged out
-        var userId = User?.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!string.IsNullOrEmpty(userId))
+        // Try to revoke via the refresh token cookie
+        var refreshCookie = Request.Cookies["refreshToken"];
+        if (!string.IsNullOrEmpty(refreshCookie))
         {
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user != null)
+            var separatorIndex = refreshCookie.IndexOf(':');
+            if (separatorIndex > 0)
             {
-                await _refreshTokenService.RevokeRefreshTokenAsync(user);
-            }
-        }
-        else
-        {
-            // If no user from token, try to revoke refresh token from cookie
-            var refreshToken = Request.Cookies["refreshToken"];
-            if (!string.IsNullOrEmpty(refreshToken))
-            {
-                var (isValid, user, _) = await _refreshTokenService.ValidateRefreshTokenAsync(refreshToken);
-                if (isValid && user != null)
+                var userId = refreshCookie[..separatorIndex];
+                var user = await userManager.FindByIdAsync(userId);
+                if (user != null)
                 {
-                    await _refreshTokenService.RevokeRefreshTokenAsync(user);
+                    await refreshTokenService.RevokeRefreshTokenAsync(user);
                 }
             }
         }
 
-        // Clear cookies (always clear, even if no user found)
-        Response.Cookies.Delete("accessToken");
-        Response.Cookies.Delete("refreshToken");
+        Response.Cookies.Delete("refreshToken", new CookieOptions { Path = "/api/auth" });
 
         return Ok(new { message = "Logout successful" });
     }
 
     [HttpGet("me")]
+    [Authorize]
     public async Task<IActionResult> GetCurrentUser()
     {
-        try
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userId is null)
         {
-            // Check if user is authenticated (don't use [Authorize] to avoid 500 on validation errors)
-            if (User?.Identity?.IsAuthenticated != true)
-            {
-                // Try to get user from refresh token as fallback
-                var refreshToken = Request.Cookies["refreshToken"];
-                if (!string.IsNullOrEmpty(refreshToken))
-                {
-                    var (isValid, refreshTokenUser, _) = await _refreshTokenService.ValidateRefreshTokenAsync(refreshToken);
-                    if (isValid && refreshTokenUser != null && refreshTokenUser.IsActive)
-                    {
-                        // Generate new access token and return user
-                        var newAccessToken = GenerateAccessToken(refreshTokenUser);
-                        Response.Cookies.Append("accessToken", newAccessToken, GetCookieOptions(isRefreshToken: false));
-                        
-                        return Ok(new UserDto
-                        {
-                            Id = refreshTokenUser.Id,
-                            Email = refreshTokenUser.Email!,
-                            FirstName = refreshTokenUser.FirstName,
-                            LastName = refreshTokenUser.LastName
-                        });
-                    }
-                }
-                
-                return Unauthorized(new { message = "Not authenticated" });
-            }
-
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { message = "Invalid token" });
-            }
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null || !user.IsActive)
-            {
-                return Unauthorized(new { message = "User not found or inactive" });
-            }
-
-            return Ok(new UserDto
-            {
-                Id = user.Id,
-                Email = user.Email!,
-                FirstName = user.FirstName,
-                LastName = user.LastName
-            });
+            return Unauthorized(new { message = "Invalid token" });
         }
-        catch (Exception)
+
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is not { IsActive: true })
         {
-            // Log exception in production
-            return StatusCode(500, new { message = "An error occurred while retrieving user information" });
+            return Unauthorized(new { message = "User not found or inactive" });
         }
+
+        return Ok(new UserDto
+        {
+            Id = user.Id,
+            Email = user.Email!,
+            FirstName = user.FirstName,
+            LastName = user.LastName
+        });
     }
 
     private string GenerateAccessToken(UserModel user)
     {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var jwtSettings = configuration.GetSection("JwtSettings");
         var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
-            ?? jwtSettings["SecretKey"];
-            
-        if (string.IsNullOrEmpty(secretKey))
-        {
-            throw new InvalidOperationException("JWT secret key not configured. Please set JWT_SECRET_KEY environment variable or JwtSettings:SecretKey in appsettings.json");
-        }
+            ?? jwtSettings["SecretKey"]
+            ?? throw new InvalidOperationException("JWT secret key not configured. Please set JWT_SECRET_KEY environment variable or JwtSettings:SecretKey in appsettings.json");
         
         // Validate secret key length (minimum 32 bytes for HS256)
-        if (Encoding.UTF8.GetByteCount(secretKey) < 32)
+        if (secretKey.Length < 32)
         {
             throw new InvalidOperationException("JWT secret key must be at least 32 bytes (256 bits) for HS256 algorithm");
         }
@@ -363,15 +288,13 @@ public class AuthController : ControllerBase
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
             new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}")
         };
 
-        var expirationMinutes = _configuration.GetValue<int>("JwtSettings:AccessTokenExpirationMinutes", 15);
+        var expirationMinutes = configuration.GetValue<int>("JwtSettings:AccessTokenExpirationMinutes", 15);
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],
             audience: jwtSettings["Audience"],
@@ -383,19 +306,19 @@ public class AuthController : ControllerBase
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private CookieOptions GetCookieOptions(bool isRefreshToken = false)
+    private CookieOptions GetRefreshTokenCookieOptions()
     {
-        var isDevelopment = _configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT") == "Development";
-        var expirationMinutes = _configuration.GetValue<int>("JwtSettings:AccessTokenExpirationMinutes", 15);
-        var expirationDays = _configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7);
+        var isDevelopment = configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT") == "Development" 
+            || Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        var expirationDays = configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7);
         
         return new CookieOptions
         {
             HttpOnly = true,
-            Secure = !isDevelopment, // Only secure in production (HTTPS)
-            SameSite = isDevelopment ? SameSiteMode.Lax : SameSiteMode.None, // Lax for dev, None for cross-origin in prod
-            Path = "/",
-            MaxAge = isRefreshToken ? TimeSpan.FromDays(expirationDays) : TimeSpan.FromMinutes(expirationMinutes)
+            Secure = !isDevelopment,
+            SameSite = isDevelopment ? SameSiteMode.Lax : SameSiteMode.None,
+            Path = "/api/auth",
+            MaxAge = TimeSpan.FromDays(expirationDays)
         };
     }
 }

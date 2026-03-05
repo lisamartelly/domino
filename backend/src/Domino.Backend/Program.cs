@@ -1,10 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Text;
 using Domino.Backend;
 using Domino.Backend.Application.Users;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -33,102 +31,33 @@ builder.Services.AddIdentity<UserModel, IdentityRole>()
 // Add RefreshTokenService
 builder.Services.AddScoped<RefreshTokenService>();
 
-// Configure Authentication with Cookie scheme
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+// Configure JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
+    ?? jwtSettings["SecretKey"] 
+    ?? throw new InvalidOperationException("JWT secret key not configured");
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.MapInboundClaims = false;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
-            ? CookieSecurePolicy.None 
-            : CookieSecurePolicy.Always;
-        options.Cookie.SameSite = builder.Environment.IsDevelopment() 
-            ? SameSiteMode.Lax 
-            : SameSiteMode.None;
-        options.Cookie.Path = "/";
-        options.Events.OnValidatePrincipal = async context =>
-        {
-            var token = context.Request.Cookies["accessToken"];
-            if (string.IsNullOrEmpty(token))
-            {
-                // No token in cookie - this is fine for endpoints that don't require auth
-                // Don't reject, just leave principal as null
-                return;
-            }
-
-            try
-            {
-                var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-                var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
-                    ?? jwtSettings["SecretKey"];
-                    
-                if (string.IsNullOrEmpty(secretKey))
-                {
-                    // Secret key not configured - can't validate, but don't reject
-                    return;
-                }
-
-                var tokenHandler = new JwtSecurityTokenHandler();
-                
-                // Check if token is readable before trying to validate
-                if (!tokenHandler.CanReadToken(token))
-                {
-                    return;
-                }
-                
-                var key = Encoding.UTF8.GetBytes(secretKey);
-
-                var validationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtSettings["Issuer"],
-                    ValidateAudience = true,
-                    ValidAudience = jwtSettings["Audience"],
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
-                };
-
-                var principal = tokenHandler.ValidateToken(token, validationParameters, out var validatedToken);
-                
-                // Verify user still exists and is active
-                var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
-                if (!string.IsNullOrEmpty(userId))
-                {
-                    using var scope = context.HttpContext.RequestServices.CreateScope();
-                    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<UserModel>>();
-                    var user = await userManager.FindByIdAsync(userId);
-                    
-                    if (user == null || !user.IsActive)
-                    {
-                        // User doesn't exist or is inactive - reject
-                        context.RejectPrincipal();
-                        return;
-                    }
-                }
-
-                context.Principal = principal;
-                context.ShouldRenew = true;
-            }
-            catch (SecurityTokenExpiredException)
-            {
-                // Token expired - this is expected, don't reject (let refresh handle it)
-                // Just return without setting principal - [Authorize] will return 401
-                return;
-            }
-            catch (SecurityTokenException)
-            {
-                // Invalid token format or signature - reject
-                context.RejectPrincipal();
-            }
-            catch (Exception)
-            {
-                // Other errors (database, etc.) - log in production, but don't crash
-                // Reject principal to force re-authentication
-                context.RejectPrincipal();
-            }
-        };
-    });
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidateAudience = true,
+        ValidAudience = jwtSettings["Audience"],
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero,
+        NameClaimType = JwtRegisteredClaimNames.Sub
+    };
+});
 
 // Configure CORS
 var allowedOrigins = builder.Environment.IsDevelopment()
@@ -162,6 +91,13 @@ builder.Services.AddRateLimiter(options =>
         limiterOptions.PermitLimit = 10;
         limiterOptions.Window = TimeSpan.FromMinutes(1);
         limiterOptions.QueueLimit = 2;
+    });
+
+    options.AddFixedWindowLimiter("RegisterPolicy", limiterOptions =>
+    {
+        limiterOptions.PermitLimit = 5;
+        limiterOptions.Window = TimeSpan.FromMinutes(30);
+        limiterOptions.QueueLimit = 0;
     });
 });
 

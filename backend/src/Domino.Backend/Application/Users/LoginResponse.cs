@@ -5,6 +5,7 @@ public record LoginResponse
     public required bool Success { get; init; }
     public string? Message { get; init; }
     public UserDto? User { get; init; }
+    public string? AccessToken { get; init; }
 }
 
 public record UserDto
