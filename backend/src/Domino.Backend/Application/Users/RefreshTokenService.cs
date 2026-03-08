@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using System.Text.Json;
 
 namespace Domino.Backend.Application.Users;
 
@@ -37,8 +38,9 @@ public class RefreshTokenService(UserManager<UserModel> userManager)
     public async Task StoreRefreshTokenAsync(UserModel user, string refreshToken, DateTime expiresAt, string? tokenFamilyId = null)
     {
         var tokenHash = HashToken(refreshToken);
-        var tokenValue = $"{tokenHash}|{expiresAt:O}|{tokenFamilyId ?? Guid.NewGuid().ToString()}";
-        
+        var tokenDto = new RefreshTokenDto(tokenHash, expiresAt, tokenFamilyId ?? Guid.NewGuid().ToString());
+
+        var tokenValue = JsonSerializer.Serialize(tokenDto);
         _ = await userManager.SetAuthenticationTokenAsync(
             user,
             _tokenProvider,
@@ -71,26 +73,24 @@ public class RefreshTokenService(UserManager<UserModel> userManager)
             return (false, null, null);
         }
 
-        var parts = storedToken.Split('|');
-        if (parts.Length < 2)
+        var tokenDto = JsonSerializer.Deserialize<RefreshTokenDto>(storedToken);
+        if (tokenDto == null)
         {
             return (false, null, null);
         }
 
-        var storedHash = parts[0];
-        if (storedHash != tokenHash)
+        if (tokenDto.TokenHash != tokenHash)
         {
             return (false, null, null);
         }
 
-        if (DateTime.TryParse(parts[1], out var expiresAt) && expiresAt < DateTime.UtcNow)
+        if (tokenDto.ExpiresAt < DateTime.UtcNow)
         {
             _ = await userManager.RemoveAuthenticationTokenAsync(user, _tokenProvider, _tokenName);
             return (false, null, null);
         }
 
-        var tokenFamilyId = parts.Length > 2 ? parts[2] : null;
-        return (true, user, tokenFamilyId);
+        return (true, user, tokenDto.TokenFamilyId);
     }
 
     /// <summary>
@@ -98,12 +98,5 @@ public class RefreshTokenService(UserManager<UserModel> userManager)
     /// </summary>
 
     public Task RevokeRefreshTokenAsync(UserModel user) => 
-        userManager.RemoveAuthenticationTokenAsync(user, _tokenProvider, _tokenName);
-
-
-    /// <summary>
-    /// Revokes all refresh tokens for a user (useful for logout or security incidents)
-    /// </summary>
-    public Task RevokeAllRefreshTokensAsync(UserModel user) =>
         userManager.RemoveAuthenticationTokenAsync(user, _tokenProvider, _tokenName);
 }

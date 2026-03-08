@@ -11,7 +11,11 @@ namespace Domino.Backend.Application.Users;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(UserManager<UserModel> userManager, RefreshTokenService refreshTokenService, IConfiguration configuration) : ControllerBase
+public class AuthController(
+    UserManager<UserModel> userManager,
+    RefreshTokenService refreshTokenService,
+    IConfiguration configuration,
+    IWebHostEnvironment environment) : ControllerBase
 {
 
     [HttpPost("register")]
@@ -308,15 +312,13 @@ public class AuthController(UserManager<UserModel> userManager, RefreshTokenServ
 
     private CookieOptions GetRefreshTokenCookieOptions()
     {
-        var isDevelopment = configuration.GetValue<string>("ASPNETCORE_ENVIRONMENT") == "Development" 
-            || Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
         var expirationDays = configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7);
         
         return new CookieOptions
         {
             HttpOnly = true,
-            Secure = !isDevelopment,
-            SameSite = isDevelopment ? SameSiteMode.Lax : SameSiteMode.None,
+            Secure = !environment.IsDevelopment(),
+            SameSite = environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
             Path = "/api/auth",
             MaxAge = TimeSpan.FromDays(expirationDays)
         };
