@@ -36,12 +36,12 @@ describe("Login", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders social login buttons", () => {
+  it("does not render social login buttons", () => {
     render(<Login />);
 
-    expect(screen.getByText("Or continue with")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /google/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /github/i })).toBeInTheDocument();
+    expect(screen.queryByText("Or continue with")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /google/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /github/i })).not.toBeInTheDocument();
   });
 
   it("updates email field when user types", async () => {
