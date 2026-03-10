@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# CDK
+cdk.out/
+
 # User-specific files
 *.rsuser
 *.suo
