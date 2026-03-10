@@ -270,6 +270,15 @@ export class DominoStack extends cdk.Stack {
         ],
       })
     );
+    deployRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          "apprunner:StartDeployment",
+          "apprunner:ListServices",
+        ],
+        resources: [service.attrServiceArn],
+      })
+    );
 
     // ---------------------------------------------------------------
     // Stack Outputs
@@ -294,6 +303,11 @@ export class DominoStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "AppRunnerServiceUrl", {
       value: `https://${service.attrServiceUrl}`,
+    });
+
+    new cdk.CfnOutput(this, "AppRunnerServiceArn", {
+      value: service.attrServiceArn,
+      description: "Add as APP_RUNNER_SERVICE_ARN secret in GitHub repo settings",
     });
 
     new cdk.CfnOutput(this, "EcrRepositoryUri", {
