@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
+#pragma warning disable IDE0058, IDE0053
 
 namespace Domino.Backend.Migrations;
 
