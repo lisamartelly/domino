@@ -78,6 +78,11 @@ jobs:
           docker push $REGISTRY/$ECR_REPO:$IMAGE_TAG
           docker push $REGISTRY/$ECR_REPO:latest
 
+      - name: Trigger App Runner deployment
+        run: |
+          aws apprunner start-deployment \
+            --service-arn ${{ secrets.APP_RUNNER_SERVICE_ARN }}
+
   deploy-frontend:
     name: Deploy Frontend
     needs: [backend-tests, frontend-tests]
