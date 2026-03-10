@@ -1,0 +1,79 @@
+name: Deploy App
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - ".github/workflows/deploy-app.yml"
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to EC2
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USER: ${{ secrets.EC2_USER }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore backend dependencies
+        working-directory: backend
+        run: dotnet restore
+
+      - name: Publish backend
+        working-directory: backend
+        run: dotnet publish src/Domino.Backend/Domino.Backend.csproj -c Release -o publish
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Package artifacts
+        run: |
+          mkdir -p deploy
+          tar czf deploy/app.tar.gz \
+            -C backend publish \
+            -C frontend dist
+
+      - name: Prepare SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > private_key
+          chmod 600 private_key
+
+      - name: Copy artifacts to EC2
+        run: |
+          scp -i private_key -o StrictHostKeyChecking=no deploy/app.tar.gz "${EC2_USER}@${EC2_HOST}:/tmp/app.tar.gz"
+
+      - name: Deploy on EC2
+        run: |
+          ssh -i private_key -o StrictHostKeyChecking=no "${EC2_USER}@${EC2_HOST}" << 'EOF'
+          set -e
+          sudo mkdir -p /opt/domino
+          sudo tar xzf /tmp/app.tar.gz -C /opt/domino
+          # TODO: Ensure a systemd service (e.g., domino.service) runs the backend from /opt/domino/publish
+          sudo systemctl restart domino || true
+          EOF
+

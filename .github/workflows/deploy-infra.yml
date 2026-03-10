@@ -1,0 +1,48 @@
+name: Deploy Infra
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "infra/**"
+      - ".github/workflows/deploy-infra.yml"
+
+jobs:
+  deploy-infra:
+    name: CDK Deploy Infra
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_INFRA_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Install dependencies
+        working-directory: infra
+        run: npm ci
+
+      - name: Build CDK app
+        working-directory: infra
+        run: npm run build
+
+      - name: CDK Bootstrap (idempotent)
+        working-directory: infra
+        run: npx cdk bootstrap
+
+      - name: CDK Deploy
+        working-directory: infra
+        run: npx cdk deploy DominoStack --require-approval never
+

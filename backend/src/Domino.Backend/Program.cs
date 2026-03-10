@@ -110,6 +110,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    // In production, serve the built React app (static files) from the web root.
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
 
 app.UseHttpsRedirection();
 
@@ -124,4 +130,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+if (!app.Environment.IsDevelopment())
+{
+    // Fallback all non-API routes to index.html so the SPA router can handle them.
+    app.MapFallbackToFile("/{*path}", "index.html");
+}
+
 app.Run();

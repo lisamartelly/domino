@@ -1,0 +1,8 @@
+{
+  "app": "node dist/bin/infra.js",
+  "context": {
+    "@aws-cdk/core:bootstrapQualifier": "domino",
+    "@aws-cdk/core:stackRelativeExports": "true"
+  }
+}
+

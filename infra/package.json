@@ -1,0 +1,25 @@
+{
+  "name": "infra",
+  "version": "1.0.0",
+  "description": "Infrastructure as code for Domino (AWS CDK, EC2, networking).",
+  "main": "dist/bin/infra.js",
+  "scripts": {
+    "build": "tsc",
+    "synth": "npm run build && cdk synth",
+    "deploy": "npm run build && cdk deploy",
+    "destroy": "npm run build && cdk destroy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "aws-cdk": "^2.241.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.241.0",
+    "constructs": "^10.5.1"
+  }
+}
