@@ -3,12 +3,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
-#pragma warning disable IDE0058, IDE0053
 
 namespace Domino.Backend.Migrations;
 
 /// <inheritdoc />
-public partial class IdentityFramework : Migration
+public partial class Identity : Migration
 {
     /// <inheritdoc />
     protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,7 +16,8 @@ public partial class IdentityFramework : Migration
             name: "roles",
             columns: table => new
             {
-                id = table.Column<string>(type: "text", nullable: false),
+                id = table.Column<int>(type: "integer", nullable: false)
+                    .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                 name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                 normalized_name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                 concurrency_stamp = table.Column<string>(type: "text", nullable: true)
@@ -31,7 +31,8 @@ public partial class IdentityFramework : Migration
             name: "users",
             columns: table => new
             {
-                id = table.Column<string>(type: "text", nullable: false),
+                id = table.Column<int>(type: "integer", nullable: false)
+                    .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                 first_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                 last_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                 birthday = table.Column<DateOnly>(type: "date", nullable: false),
@@ -62,7 +63,7 @@ public partial class IdentityFramework : Migration
             {
                 id = table.Column<int>(type: "integer", nullable: false)
                     .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                role_id = table.Column<string>(type: "text", nullable: false),
+                role_id = table.Column<int>(type: "integer", nullable: false),
                 claim_type = table.Column<string>(type: "text", nullable: true),
                 claim_value = table.Column<string>(type: "text", nullable: true)
             },
@@ -83,7 +84,7 @@ public partial class IdentityFramework : Migration
             {
                 id = table.Column<int>(type: "integer", nullable: false)
                     .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                user_id = table.Column<string>(type: "text", nullable: false),
+                user_id = table.Column<int>(type: "integer", nullable: false),
                 claim_type = table.Column<string>(type: "text", nullable: true),
                 claim_value = table.Column<string>(type: "text", nullable: true)
             },
@@ -105,7 +106,7 @@ public partial class IdentityFramework : Migration
                 login_provider = table.Column<string>(type: "text", nullable: false),
                 provider_key = table.Column<string>(type: "text", nullable: false),
                 provider_display_name = table.Column<string>(type: "text", nullable: true),
-                user_id = table.Column<string>(type: "text", nullable: false)
+                user_id = table.Column<int>(type: "integer", nullable: false)
             },
             constraints: table =>
             {
@@ -122,8 +123,8 @@ public partial class IdentityFramework : Migration
             name: "user_roles",
             columns: table => new
             {
-                user_id = table.Column<string>(type: "text", nullable: false),
-                role_id = table.Column<string>(type: "text", nullable: false)
+                user_id = table.Column<int>(type: "integer", nullable: false),
+                role_id = table.Column<int>(type: "integer", nullable: false)
             },
             constraints: table =>
             {
@@ -146,7 +147,7 @@ public partial class IdentityFramework : Migration
             name: "user_tokens",
             columns: table => new
             {
-                user_id = table.Column<string>(type: "text", nullable: false),
+                user_id = table.Column<int>(type: "integer", nullable: false),
                 login_provider = table.Column<string>(type: "text", nullable: false),
                 name = table.Column<string>(type: "text", nullable: false),
                 value = table.Column<string>(type: "text", nullable: true)

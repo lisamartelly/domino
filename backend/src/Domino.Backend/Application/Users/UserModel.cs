@@ -9,7 +9,7 @@ namespace Domino.Backend.Application.Users;
 
 [Table("users")]
 [PrimaryKey(nameof(Id))]
-public class UserModel : IdentityUser
+public class UserModel : IdentityUser<int>
 {
     [Column("first_name")]
     [MaxLength(100)]
