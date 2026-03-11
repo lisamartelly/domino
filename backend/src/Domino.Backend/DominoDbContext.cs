@@ -1,3 +1,4 @@
+# pragma warning disable IDE0058
 using Domino.Backend.Application.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -5,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Domino.Backend;
 
-public class DominoDbContext(DbContextOptions<DominoDbContext> options) : IdentityDbContext<UserModel>(options)
+public class DominoDbContext(DbContextOptions<DominoDbContext> options) : IdentityDbContext<UserModel, IdentityRole<int>, int>(options)
 {
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -50,7 +51,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         });
 
         // Configure IdentityRole columns to use snake_case
-        builder.Entity<IdentityRole>(entity =>
+        builder.Entity<IdentityRole<int>>(entity =>
         {
             entity.ToTable("roles");
             
@@ -65,7 +66,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         });
 
         // Configure IdentityUserRole columns to use snake_case
-        builder.Entity<IdentityUserRole<string>>(entity =>
+        builder.Entity<IdentityUserRole<int>>(entity =>
         {
             entity.ToTable("user_roles");
             
@@ -76,7 +77,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         });
 
         // Configure IdentityUserClaim columns to use snake_case
-        builder.Entity<IdentityUserClaim<string>>(entity =>
+        builder.Entity<IdentityUserClaim<int>>(entity =>
         {
             entity.ToTable("user_claims");
             
@@ -91,7 +92,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         });
 
         // Configure IdentityUserLogin columns to use snake_case
-        builder.Entity<IdentityUserLogin<string>>(entity =>
+        builder.Entity<IdentityUserLogin<int>>(entity =>
         {
             entity.ToTable("user_logins");
             
@@ -106,7 +107,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         });
 
         // Configure IdentityUserToken columns to use snake_case
-        builder.Entity<IdentityUserToken<string>>(entity =>
+        builder.Entity<IdentityUserToken<int>>(entity =>
         {
             entity.ToTable("user_tokens");
             
@@ -121,7 +122,7 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         });
 
         // Configure IdentityRoleClaim columns to use snake_case
-        builder.Entity<IdentityRoleClaim<string>>(entity =>
+        builder.Entity<IdentityRoleClaim<int>>(entity =>
         {
             entity.ToTable("role_claims");
             

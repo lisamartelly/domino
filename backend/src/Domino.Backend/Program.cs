@@ -24,7 +24,7 @@ builder.Services.AddDbContext<DominoDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add Identity Framework services
-builder.Services.AddIdentity<UserModel, IdentityRole>()
+builder.Services.AddIdentity<UserModel, IdentityRole<int>>()
     .AddEntityFrameworkStores<DominoDbContext>()
     .AddDefaultTokenProviders();
 
