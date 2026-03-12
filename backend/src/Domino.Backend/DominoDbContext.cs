@@ -1,5 +1,6 @@
 # pragma warning disable IDE0058
 using Domino.Backend.Application.Users;
+using Domino.Backend.Application.Surveys.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -8,6 +9,7 @@ namespace Domino.Backend;
 
 public class DominoDbContext(DbContextOptions<DominoDbContext> options) : IdentityDbContext<UserModel, IdentityRole<int>, int>(options)
 {
+    public DbSet<SurveyModel> Surveys => Set<SurveyModel>();
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -135,5 +137,25 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
             entity.Property(e => e.ClaimValue)
                 .HasColumnName("claim_value");
         });
+
+        builder.Entity<SurveyVersionModel>(entity =>
+        {
+            entity.HasIndex(sv => sv.SurveyId)
+            .IsUnique()
+            .HasFilter($"is_active = TRUE AND published_at IS NOT NULL");
+        });
+
+        builder.Entity<QuestionVersionModel>(entity =>
+        {
+            entity.Property(e => e.QuestionType)
+                .HasConversion<string>()
+                .HasMaxLength(255);
+        });
+
+        builder.Entity<AnswerModel>().UseTptMappingStrategy();
+        builder.Entity<AnswerTextModel>();
+        builder.Entity<AnswerNumberModel>();
+        builder.Entity<AnswerBooleanModel>();
+        builder.Entity<AnswerChoiceModel>();
     }
 }

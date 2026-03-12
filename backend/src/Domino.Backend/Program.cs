@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Domino.Backend;
 using Domino.Backend.Application.Users;
+using Domino.Backend.Utilities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -19,9 +20,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add TimestampInterceptor
+builder.Services.AddSingleton<TimestampInterceptor>();
+
 // Add PostgreSQL services
-builder.Services.AddDbContext<DominoDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<DominoDbContext>((sp, options) =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+        .AddInterceptors(sp.GetRequiredService<TimestampInterceptor>()));
 
 // Add Identity Framework services
 builder.Services.AddIdentity<UserModel, IdentityRole<int>>()
@@ -61,9 +66,9 @@ builder.Services.AddAuthentication(options =>
 
 // Configure CORS
 var allowedOrigins = builder.Environment.IsDevelopment()
-    ? new[] { "http://localhost:5173" } // Vite dev server
-    : builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
-        ?? Array.Empty<string>();
+    ? ["http://localhost:5173"] // Vite dev server
+    : builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+        ?? [];
 
 builder.Services.AddCors(options =>
 {
