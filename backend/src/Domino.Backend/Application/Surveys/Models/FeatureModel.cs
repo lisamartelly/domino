@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Domino.Backend.Utilities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Domino.Backend.Application.Surveys.Models;
 
@@ -25,4 +24,6 @@ public class FeatureModel : IHasTimeStamps
 
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; }
+
+    public ICollection<QuestionFeatureMapModel> QuestionFeatureMaps { get; set; } = [];
 }

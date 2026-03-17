@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations.Schema;
-using Domino.Backend.Application.Surveys.Models;
 
 namespace Domino.Backend.Application.Surveys.Models;
 

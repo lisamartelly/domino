@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Domino.Backend.Migrations
 {
     [DbContext(typeof(DominoDbContext))]
-    [Migration("20260312161144_SurveySchema")]
+    [Migration("20260317224351_SurveySchema")]
     partial class SurveySchema
     {
         /// <inheritdoc />
@@ -59,6 +59,79 @@ namespace Domino.Backend.Migrations
                     b.ToTable("answers");
 
                     b.UseTptMappingStrategy();
+                });
+
+            modelBuilder.Entity("Domino.Backend.Application.Surveys.Models.FeatureModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("features");
+                });
+
+            modelBuilder.Entity("Domino.Backend.Application.Surveys.Models.QuestionFeatureMapModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("FeatureId")
+                        .HasColumnType("integer")
+                        .HasColumnName("feature_id");
+
+                    b.Property<int>("QuestionVersionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("question_version_id");
+
+                    b.Property<string>("TransformJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("transform_json");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FeatureId");
+
+                    b.HasIndex("QuestionVersionId");
+
+                    b.ToTable("question_feature_maps");
                 });
 
             modelBuilder.Entity("Domino.Backend.Application.Surveys.Models.QuestionModel", b =>
@@ -625,6 +698,25 @@ namespace Domino.Backend.Migrations
                     b.Navigation("SurveyResponse");
                 });
 
+            modelBuilder.Entity("Domino.Backend.Application.Surveys.Models.QuestionFeatureMapModel", b =>
+                {
+                    b.HasOne("Domino.Backend.Application.Surveys.Models.FeatureModel", "Feature")
+                        .WithMany("QuestionFeatureMaps")
+                        .HasForeignKey("FeatureId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domino.Backend.Application.Surveys.Models.QuestionVersionModel", "QuestionVersion")
+                        .WithMany("QuestionFeatureMaps")
+                        .HasForeignKey("QuestionVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Feature");
+
+                    b.Navigation("QuestionVersion");
+                });
+
             modelBuilder.Entity("Domino.Backend.Application.Surveys.Models.QuestionOptionModel", b =>
                 {
                     b.HasOne("Domino.Backend.Application.Surveys.Models.QuestionVersionModel", "QuestionVersion")
@@ -778,6 +870,16 @@ namespace Domino.Backend.Migrations
                         .HasForeignKey("Domino.Backend.Application.Surveys.Models.AnswerTextModel", "Id")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Domino.Backend.Application.Surveys.Models.FeatureModel", b =>
+                {
+                    b.Navigation("QuestionFeatureMaps");
+                });
+
+            modelBuilder.Entity("Domino.Backend.Application.Surveys.Models.QuestionVersionModel", b =>
+                {
+                    b.Navigation("QuestionFeatureMaps");
                 });
 #pragma warning restore 612, 618
         }

@@ -13,6 +13,22 @@ public partial class SurveySchema : Migration
     protected override void Up(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.CreateTable(
+            name: "features",
+            columns: table => new
+            {
+                id = table.Column<int>(type: "integer", nullable: false)
+                    .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                description = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_features", x => x.id);
+            });
+
+        migrationBuilder.CreateTable(
             name: "questions",
             columns: table => new
             {
@@ -124,6 +140,35 @@ public partial class SurveySchema : Migration
                     name: "FK_survey_responses_users_user_id",
                     column: x => x.user_id,
                     principalTable: "users",
+                    principalColumn: "id",
+                    onDelete: ReferentialAction.Cascade);
+            });
+
+        migrationBuilder.CreateTable(
+            name: "question_feature_maps",
+            columns: table => new
+            {
+                id = table.Column<int>(type: "integer", nullable: false)
+                    .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                question_version_id = table.Column<int>(type: "integer", nullable: false),
+                feature_id = table.Column<int>(type: "integer", nullable: false),
+                transform_json = table.Column<string>(type: "text", nullable: false),
+                created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+            },
+            constraints: table =>
+            {
+                table.PrimaryKey("PK_question_feature_maps", x => x.id);
+                table.ForeignKey(
+                    name: "FK_question_feature_maps_features_feature_id",
+                    column: x => x.feature_id,
+                    principalTable: "features",
+                    principalColumn: "id",
+                    onDelete: ReferentialAction.Cascade);
+                table.ForeignKey(
+                    name: "FK_question_feature_maps_question_versions_question_version_id",
+                    column: x => x.question_version_id,
+                    principalTable: "question_versions",
                     principalColumn: "id",
                     onDelete: ReferentialAction.Cascade);
             });
@@ -274,6 +319,16 @@ public partial class SurveySchema : Migration
             column: "survey_response_id");
 
         migrationBuilder.CreateIndex(
+            name: "IX_question_feature_maps_feature_id",
+            table: "question_feature_maps",
+            column: "feature_id");
+
+        migrationBuilder.CreateIndex(
+            name: "IX_question_feature_maps_question_version_id",
+            table: "question_feature_maps",
+            column: "question_version_id");
+
+        migrationBuilder.CreateIndex(
             name: "IX_question_options_question_version_id",
             table: "question_options",
             column: "question_version_id");
@@ -322,10 +377,16 @@ public partial class SurveySchema : Migration
             name: "answer_texts");
 
         migrationBuilder.DropTable(
+            name: "question_feature_maps");
+
+        migrationBuilder.DropTable(
             name: "question_options");
 
         migrationBuilder.DropTable(
             name: "answers");
+
+        migrationBuilder.DropTable(
+            name: "features");
 
         migrationBuilder.DropTable(
             name: "question_versions");

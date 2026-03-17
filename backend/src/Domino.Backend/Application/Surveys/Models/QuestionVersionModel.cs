@@ -41,5 +41,7 @@ public class QuestionVersionModel : IHasTimeStamps
     public DateTime CreatedAt { get; set; }
 
     [Column("updated_at")]
-    public DateTime UpdatedAt { get; set; }   
+    public DateTime UpdatedAt { get; set; }
+
+    public ICollection<QuestionFeatureMapModel> QuestionFeatureMaps { get; set; } = [];
 }

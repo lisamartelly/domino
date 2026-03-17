@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Domino.Backend.Utilities;
-using Microsoft.EntityFrameworkCore;
 
 namespace Domino.Backend.Application.Surveys.Models;
 
