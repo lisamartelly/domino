@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Domino.Backend.Migrations
 {
     [DbContext(typeof(DominoDbContext))]
-    [Migration("20260317224351_SurveySchema")]
+    [Migration("20260318002714_SurveySchema")]
     partial class SurveySchema
     {
         /// <inheritdoc />
@@ -290,11 +290,20 @@ namespace Domino.Backend.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("name");
 
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("slug");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
+
+                    b.HasIndex(new[] { "Slug" }, "idx_survey_slug")
+                        .IsUnique();
 
                     b.ToTable("surveys");
                 });

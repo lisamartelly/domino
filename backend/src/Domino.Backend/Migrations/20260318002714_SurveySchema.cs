@@ -51,6 +51,7 @@ public partial class SurveySchema : Migration
                 id = table.Column<int>(type: "integer", nullable: false)
                     .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                 name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                slug = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                 description = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                 created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                 updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -359,6 +360,12 @@ public partial class SurveySchema : Migration
             column: "survey_id",
             unique: true,
             filter: "is_active = TRUE AND published_at IS NOT NULL");
+
+        migrationBuilder.CreateIndex(
+            name: "idx_survey_slug",
+            table: "surveys",
+            column: "slug",
+            unique: true);
     }
 
     /// <inheritdoc />
