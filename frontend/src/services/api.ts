@@ -31,6 +31,20 @@ export interface LoginResponse {
   accessToken?: string;
 }
 
+function useMockApi(): boolean {
+  return import.meta.env.VITE_USE_MOCK === "true";
+}
+
+const mockUser: UserDto = {
+  id: "1",
+  email: "dev@example.com",
+  firstName: "Dev",
+  lastName: "User",
+};
+
+/** Mock session email (set on login, cleared on logout). */
+let mockSessionEmail: string | null = null;
+
 // In-memory token storage (cleared on page refresh, restored via refresh token)
 let accessToken: string | null = null;
 
@@ -110,6 +124,10 @@ export async function tryRefreshToken(): Promise<boolean> {
 }
 
 async function refreshTokenIfNeeded(): Promise<boolean> {
+  if (useMockApi()) {
+    return false;
+  }
+
   // If refresh is already in progress, wait for it
   if (refreshPromise) {
     return refreshPromise;
@@ -149,6 +167,14 @@ async function refreshTokenIfNeeded(): Promise<boolean> {
 export const registerUser = async (
   data: RegisterRequest
 ): Promise<RegisterResponse> => {
+  if (useMockApi()) {
+    return {
+      success: true,
+      message: "Registered (mock)",
+      errors: [],
+    };
+  }
+
   const response = await fetchWithAuth("/api/auth/register", {
     method: "POST",
     body: JSON.stringify(data),
@@ -163,6 +189,15 @@ export const registerUser = async (
 };
 
 export const loginUser = async (data: LoginRequest): Promise<LoginResponse> => {
+  if (useMockApi()) {
+    mockSessionEmail = data.email;
+    return {
+      success: true,
+      user: { ...mockUser, email: data.email },
+      accessToken: "mock-access-token",
+    };
+  }
+
   const response = await fetchWithAuth("/api/auth/login", {
     method: "POST",
     body: JSON.stringify(data),
@@ -179,6 +214,12 @@ export const loginUser = async (data: LoginRequest): Promise<LoginResponse> => {
 };
 
 export const logoutUser = async (): Promise<void> => {
+  if (useMockApi()) {
+    mockSessionEmail = null;
+    clearAccessToken();
+    return;
+  }
+
   await fetchWithAuth("/api/auth/logout", {
     method: "POST",
   });
@@ -187,6 +228,16 @@ export const logoutUser = async (): Promise<void> => {
 };
 
 export const getCurrentUser = async (): Promise<UserDto> => {
+  if (useMockApi()) {
+    if (!getAccessToken()) {
+      throw new Error("Failed to get current user");
+    }
+    return {
+      ...mockUser,
+      email: mockSessionEmail ?? mockUser.email,
+    };
+  }
+
   const response = await fetchWithAuth("/api/auth/me", {
     method: "GET",
   });

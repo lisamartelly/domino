@@ -10,7 +10,9 @@ import {
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AuthPage } from "./components/AuthPage";
 import { Dashboard } from "./components/Dashboard";
+import { MatchSection } from "./components/matching/MatchSection";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { MatchFlowProvider } from "./contexts/MatchFlowContext";
 
 function AppRoutes() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -57,6 +59,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/match/*"
+        element={
+          <ProtectedRoute>
+            <MatchFlowProvider>
+              <MatchSection />
+            </MatchFlowProvider>
           </ProtectedRoute>
         }
       />

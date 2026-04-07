@@ -1,0 +1,188 @@
+import { useNavigate } from "react-router-dom";
+import { mockMembers } from "../../data/mockMembers";
+import { useMatchFlow } from "../../contexts/MatchFlowContext";
+import type { MatchMember } from "../../types/matching";
+
+function SlotCard({
+  label,
+  member,
+  onRemove,
+}: {
+  label: string;
+  member: MatchMember | null;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="flex-1 min-w-[140px] rounded-xl border-2 border-dashed border-charcoal-300 bg-white/80 p-4 flex flex-col items-center gap-2">
+      <span className="text-xs font-medium uppercase tracking-wide text-charcoal-500">
+        {label}
+      </span>
+      <div className="w-16 h-16 rounded-full bg-charcoal-200 flex items-center justify-center text-charcoal-500 text-2xl">
+        {member ? "✓" : "👤"}
+      </div>
+      {member ? (
+        <>
+          <p className="font-semibold text-charcoal-900 text-center text-sm">
+            {member.name}
+          </p>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-xs text-primary-600 hover:text-primary-700 underline"
+          >
+            Remove
+          </button>
+        </>
+      ) : (
+        <p className="text-sm text-charcoal-500 text-center">Empty</p>
+      )}
+    </div>
+  );
+}
+
+export function MatchingPage() {
+  const navigate = useNavigate();
+  const { slot0, slot1, removeFromSlot } = useMatchFlow();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-charcoal-900 via-charcoal-800 to-charcoal-900 text-cream-50 p-4 md:p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-cream-50">
+              Match
+            </h1>
+            <p className="text-charcoal-300 text-sm mt-1">
+              Pick two people from the table, then review and send or save a
+              draft.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              title="Coming soon"
+              className="px-3 py-2 rounded-lg bg-charcoal-700 text-charcoal-200 text-sm cursor-not-allowed opacity-70"
+              disabled
+            >
+              Generate
+            </button>
+            <button
+              type="button"
+              title="Coming soon"
+              className="px-3 py-2 rounded-lg bg-charcoal-700 text-charcoal-200 text-sm cursor-not-allowed opacity-70"
+              disabled
+            >
+              Manual
+            </button>
+            <button
+              type="button"
+              title="Filters to suggestions — coming soon"
+              className="px-3 py-2 rounded-lg border border-charcoal-500 text-cream-50 text-sm cursor-not-allowed opacity-70"
+              disabled
+            >
+              Filters
+            </button>
+          </div>
+        </header>
+
+        <section className="flex flex-col sm:flex-row gap-4 items-stretch justify-center">
+          <SlotCard
+            label="Match slot 1"
+            member={slot0}
+            onRemove={() => removeFromSlot(0)}
+          />
+          <div className="hidden sm:flex items-center text-charcoal-500 text-xl font-light">
+            +
+          </div>
+          <SlotCard
+            label="Match slot 2"
+            member={slot1}
+            onRemove={() => removeFromSlot(1)}
+          />
+        </section>
+
+        <section className="bg-cream-50 rounded-2xl border border-charcoal-200 shadow-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-charcoal-200 bg-white">
+            <h2 className="text-lg font-semibold text-charcoal-900">
+              Members
+            </h2>
+            <p className="text-sm text-charcoal-600">
+              Click a row to open detail and add to a match slot.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-charcoal-900">
+              <thead>
+                <tr className="bg-charcoal-100 border-b border-charcoal-200">
+                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                    Name
+                  </th>
+                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                    City
+                  </th>
+                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                    Age
+                  </th>
+                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                    Orientation
+                  </th>
+                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                    Sex
+                  </th>
+                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                    Ghosted match
+                  </th>
+                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                    Denials
+                  </th>
+                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                    Successes
+                  </th>
+                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                    Date score
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {mockMembers.map((m) => (
+                  <tr
+                    key={m.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/match/member/${m.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        navigate(`/match/member/${m.id}`);
+                      }
+                    }}
+                    className="border-b border-charcoal-100 hover:bg-primary-50 cursor-pointer transition-colors"
+                  >
+                    <td className="px-3 py-3 align-top">
+                      <div className="font-medium">{m.name}</div>
+                      <div className="text-xs text-charcoal-500 mt-1 max-w-[200px]">
+                        {m.intakePreview.join(" · ")}
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap">{m.city}</td>
+                    <td className="px-3 py-3">{m.age}</td>
+                    <td className="px-3 py-3 whitespace-nowrap">
+                      {m.orientation}
+                    </td>
+                    <td className="px-3 py-3">{m.sex}</td>
+                    <td className="px-3 py-3">{m.ghostedMatch}</td>
+                    <td className="px-3 py-3">{m.denials}</td>
+                    <td className="px-3 py-3">{m.successes}</td>
+                    <td className="px-3 py-3 font-medium text-primary-700">
+                      {m.dateScore}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}

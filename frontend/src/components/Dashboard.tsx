@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
 export function Dashboard() {
@@ -39,6 +40,13 @@ export function Dashboard() {
               </div>
             </div>
           )}
+
+          <Link
+            to="/match"
+            className="block w-full text-center bg-secondary-500 hover:bg-secondary-600 text-cream-50 font-semibold py-3 px-4 rounded-lg transition-all duration-200 mb-4 shadow-lg hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-secondary-400 focus:ring-offset-2 focus:ring-offset-cream-50"
+          >
+            Go to matching
+          </Link>
 
           <button
             onClick={handleLogout}
