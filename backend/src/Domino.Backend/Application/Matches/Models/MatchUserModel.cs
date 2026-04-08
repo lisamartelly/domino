@@ -1,6 +1,9 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using Domino.Backend.Utilities;
 using Domino.Backend.Application.Users;
+
+namespace Domino.Backend.Application.Matches.Models;
 
 [Table("match_users")]
 public class MatchUserModel : IHasTimeStamps
@@ -23,4 +26,10 @@ public class MatchUserModel : IHasTimeStamps
 
     [Column("accepted")]
     public bool? Accepted { get; set; }
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; }
+
+    [Column("updated_at")]
+    public DateTime UpdatedAt { get; set; }
 }

@@ -1,7 +1,11 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using Domino.Backend.Utilities;
+using System.ComponentModel.DataAnnotations;
+
+namespace Domino.Backend.Application.ActivityIdeas.Models;
 
 [Table("activity_ideas")]
-public class ActivityIdea : IHasTimeStamps
+public class ActivityIdeaModel : IHasTimeStamps
 {
     [Key]
     [Column("id")]
@@ -14,4 +18,10 @@ public class ActivityIdea : IHasTimeStamps
     [Column("description")]
     [MaxLength(1000)]
     public required string Description { get; set; }
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; }
+
+    [Column("updated_at")]
+    public DateTime UpdatedAt { get; set; }
 }

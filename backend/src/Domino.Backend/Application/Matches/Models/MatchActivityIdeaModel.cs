@@ -1,9 +1,12 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using Domino.Backend.Utilities;
-using Domino.Backend.Application.ActivityIdeas;
+using Domino.Backend.Application.ActivityIdeas.Models;
+
+namespace Domino.Backend.Application.Matches.Models;
 
 [Table("match_activity_ideas")]
-public class MatchActivityIdea : IHasTimeStamps
+public class MatchActivityIdeaModel : IHasTimeStamps
 {
     [Key]
     [Column("id")]
@@ -19,5 +22,11 @@ public class MatchActivityIdea : IHasTimeStamps
     public int ActivityIdeaId { get; set; }
 
     [ForeignKey(nameof(ActivityIdeaId))]
-    public ActivityIdea? ActivityIdea { get; set; }
+    public ActivityIdeaModel? ActivityIdea { get; set; }
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; }
+
+    [Column("updated_at")]
+    public DateTime UpdatedAt { get; set; }
 }
