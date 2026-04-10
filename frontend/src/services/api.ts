@@ -23,6 +23,7 @@ export interface UserDto {
   firstName: string;
   lastName: string;
   roles: string[];
+  hasCompletedIntake: boolean;
 }
 
 export interface LoginResponse {
@@ -42,6 +43,7 @@ const mockUser: UserDto = {
   firstName: "Dev",
   lastName: "User",
   roles: ["Admin"],
+  hasCompletedIntake: true,
 };
 
 /** Mock session email (set on login, cleared on logout). */
@@ -168,12 +170,18 @@ async function refreshTokenIfNeeded(): Promise<boolean> {
 
 export const registerUser = async (
   data: RegisterRequest
-): Promise<RegisterResponse> => {
+): Promise<LoginResponse> => {
   if (useMockApi()) {
     return {
       success: true,
-      message: "Registered (mock)",
-      errors: [],
+      user: {
+        ...mockUser,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        hasCompletedIntake: false,
+      },
+      accessToken: "mock-access-token",
     };
   }
 
@@ -415,6 +423,87 @@ export const respondToMatch = async (
   if (!response.ok) {
     const err = await response.json();
     throw new Error(err.message || "Failed to respond to match");
+  }
+  return response.json();
+};
+
+// ── Surveys ──
+
+export interface QuestionOptionDto {
+  id: number;
+  value: string;
+  displayValue: string;
+  sortOrder: number;
+}
+
+export interface QuestionDto {
+  questionVersionId: number;
+  stableKey: string;
+  questionGroup: string | null;
+  prompt: string;
+  questionType: "Text" | "Number" | "Boolean" | "SingleChoice" | "MultipleChoice";
+  required: boolean;
+  options: QuestionOptionDto[];
+}
+
+export interface SurveyDto {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  versionId: number;
+  questions: QuestionDto[];
+}
+
+export interface SubmitAnswerRequest {
+  questionVersionId: number;
+  textValue?: string;
+  numberValue?: number;
+  booleanValue?: boolean;
+  selectedOptionIds?: number[];
+}
+
+export const getSurveyBySlug = async (slug: string): Promise<SurveyDto> => {
+  const response = await fetchWithAuth(`/api/surveys/${slug}`);
+  if (!response.ok) throw new Error("Failed to fetch survey");
+  return response.json();
+};
+
+export interface SurveyAnswerDto {
+  prompt: string;
+  questionGroup: string | null;
+  questionType: string;
+  answer: string | null;
+}
+
+export interface SurveyResponseDto {
+  surveyName: string;
+  completedAt: string;
+  answers: SurveyAnswerDto[];
+}
+
+export const getUserSurveyResponse = async (
+  slug: string,
+  userId: number
+): Promise<SurveyResponseDto> => {
+  const response = await fetchWithAuth(
+    `/api/surveys/${slug}/responses/${userId}`
+  );
+  if (!response.ok) throw new Error("Failed to fetch survey response");
+  return response.json();
+};
+
+export const submitSurveyResponse = async (
+  slug: string,
+  answers: SubmitAnswerRequest[]
+): Promise<{ success: boolean }> => {
+  const response = await fetchWithAuth(`/api/surveys/${slug}/responses`, {
+    method: "POST",
+    body: JSON.stringify({ answers }),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to submit survey");
   }
   return response.json();
 };

@@ -2,13 +2,16 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RegisterForm } from "../src/components/RegisterForm";
-import * as api from "../src/services/api";
 
-vi.mock("../src/services/api");
+const mockRegister = vi.fn();
+
+vi.mock("../src/contexts/AuthContext", () => ({
+  useAuth: () => ({
+    register: mockRegister,
+  }),
+}));
 
 describe("RegisterForm", () => {
-  const mockRegisterUser = vi.mocked(api.registerUser);
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -56,8 +59,7 @@ describe("RegisterForm", () => {
 
   it("clears errors when user starts typing", async () => {
     const user = userEvent.setup();
-    mockRegisterUser.mockRejectedValueOnce({
-      success: false,
+    mockRegister.mockRejectedValueOnce({
       errors: ["Email already exists"],
     });
 
@@ -88,11 +90,7 @@ describe("RegisterForm", () => {
 
   it("submits form with valid data", async () => {
     const user = userEvent.setup();
-    mockRegisterUser.mockResolvedValueOnce({
-      success: true,
-      message: "User registered successfully",
-      errors: [],
-    });
+    mockRegister.mockResolvedValueOnce(undefined);
 
     render(<RegisterForm />);
 
@@ -107,7 +105,7 @@ describe("RegisterForm", () => {
     await user.click(screen.getByRole("button", { name: /sign up/i }));
 
     await waitFor(() => {
-      expect(mockRegisterUser).toHaveBeenCalledWith({
+      expect(mockRegister).toHaveBeenCalledWith({
         email: "test@example.com",
         password: "password123",
         firstName: "John",
@@ -117,13 +115,9 @@ describe("RegisterForm", () => {
     });
   });
 
-  it("displays success message on successful registration", async () => {
+  it("calls register on successful submission (auto-login)", async () => {
     const user = userEvent.setup();
-    mockRegisterUser.mockResolvedValueOnce({
-      success: true,
-      message: "User registered successfully",
-      errors: [],
-    });
+    mockRegister.mockResolvedValueOnce(undefined);
 
     render(<RegisterForm />);
 
@@ -138,48 +132,13 @@ describe("RegisterForm", () => {
     await user.click(screen.getByRole("button", { name: /sign up/i }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Registration successful! You can now log in.")
-      ).toBeInTheDocument();
-    });
-  });
-
-  it("resets form after successful registration", async () => {
-    const user = userEvent.setup();
-    mockRegisterUser.mockResolvedValueOnce({
-      success: true,
-      message: "User registered successfully",
-      errors: [],
-    });
-
-    render(<RegisterForm />);
-
-    const emailInput = screen.getByLabelText(/email address/i);
-    const passwordInput = screen.getByLabelText(/^password$/i);
-    const firstNameInput = screen.getByLabelText(/first name/i);
-    const lastNameInput = screen.getByLabelText(/last name/i);
-    const birthdayInput = screen.getByLabelText(/birthday/i);
-
-    await user.type(emailInput, "test@example.com");
-    await user.type(passwordInput, "password123");
-    await user.type(firstNameInput, "John");
-    await user.type(lastNameInput, "Doe");
-    await user.type(birthdayInput, "1990-01-01");
-    await user.click(screen.getByRole("button", { name: /sign up/i }));
-
-    await waitFor(() => {
-      expect(emailInput).toHaveValue("");
-      expect(passwordInput).toHaveValue("");
-      expect(firstNameInput).toHaveValue("");
-      expect(lastNameInput).toHaveValue("");
-      expect(birthdayInput).toHaveValue("");
+      expect(mockRegister).toHaveBeenCalledTimes(1);
     });
   });
 
   it("displays error messages on registration failure", async () => {
     const user = userEvent.setup();
-    mockRegisterUser.mockRejectedValueOnce({
-      success: false,
+    mockRegister.mockRejectedValueOnce({
       errors: ["Email already exists", "Password is too weak"],
     });
 
@@ -203,7 +162,7 @@ describe("RegisterForm", () => {
 
   it("displays generic error message for unexpected errors", async () => {
     const user = userEvent.setup();
-    mockRegisterUser.mockRejectedValueOnce(new Error("Network error"));
+    mockRegister.mockRejectedValueOnce(new Error("Network error"));
 
     render(<RegisterForm />);
 
@@ -230,7 +189,7 @@ describe("RegisterForm", () => {
     const promise = new Promise((resolve) => {
       resolvePromise = resolve;
     });
-    mockRegisterUser.mockReturnValueOnce(promise as any);
+    mockRegister.mockReturnValueOnce(promise);
 
     render(<RegisterForm />);
 
@@ -252,11 +211,7 @@ describe("RegisterForm", () => {
       expect(screen.getByLabelText(/email address/i)).toBeDisabled();
     });
 
-    resolvePromise!({
-      success: true,
-      message: "User registered successfully",
-      errors: [],
-    });
+    resolvePromise!(undefined);
 
     await waitFor(() => {
       expect(submitButton).not.toBeDisabled();

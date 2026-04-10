@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getMemberDetail, type MemberDetailDto } from "../../services/api";
+import {
+  getMemberDetail,
+  getUserSurveyResponse,
+  type MemberDetailDto,
+  type SurveyResponseDto,
+} from "../../services/api";
 import { useMatchFlow } from "../../contexts/MatchFlowContext";
 import { toMatchMember } from "../../types/matching";
 import { getAvatarUrl } from "../../utils/avatar";
@@ -11,15 +16,25 @@ export function MemberDetailPage() {
   const { addToMatch } = useMatchFlow();
   const [notice, setNotice] = useState<string | null>(null);
   const [member, setMember] = useState<MemberDetailDto | null>(null);
+  const [intakeResponse, setIntakeResponse] =
+    useState<SurveyResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
     setLoading(true);
-    getMemberDetail(parseInt(id, 10))
-      .then((data) => {
-        if (!cancelled) setMember(data);
+
+    const userId = parseInt(id, 10);
+
+    Promise.all([
+      getMemberDetail(userId),
+      getUserSurveyResponse("intake", userId).catch(() => null),
+    ])
+      .then(([memberData, intake]) => {
+        if (cancelled) return;
+        setMember(memberData);
+        setIntakeResponse(intake);
       })
       .catch(() => {
         if (!cancelled) setMember(null);
@@ -27,6 +42,7 @@ export function MemberDetailPage() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
@@ -158,6 +174,30 @@ export function MemberDetailPage() {
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {intakeResponse && intakeResponse.answers.length > 0 && (
+              <div className="border-t border-charcoal-100 pt-6">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-primary-500 mb-3">
+                  Intake responses
+                </h2>
+                <dl className="space-y-3">
+                  {intakeResponse.answers.map((a, i) => (
+                    <div key={i}>
+                      <dt className="text-xs font-medium text-charcoal-500">
+                        {a.prompt}
+                      </dt>
+                      <dd className="text-sm text-charcoal-900 mt-0.5">
+                        {a.answer ?? (
+                          <span className="italic text-charcoal-400">
+                            No answer
+                          </span>
+                        )}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
             )}
           </div>

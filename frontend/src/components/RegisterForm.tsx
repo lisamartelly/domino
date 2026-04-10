@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { registerUser, type RegisterRequest } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
+import type { RegisterRequest } from "../services/api";
 
 export function RegisterForm() {
+  const { register } = useAuth();
+
   const [formData, setFormData] = useState<RegisterRequest>({
     email: "",
     password: "",
@@ -11,7 +14,6 @@ export function RegisterForm() {
   });
 
   const [errors, setErrors] = useState<string[]>([]);
-  const [success, setSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -20,32 +22,18 @@ export function RegisterForm() {
       ...prev,
       [name]: value,
     }));
-    // Clear errors when user starts typing
     if (errors.length > 0) {
       setErrors([]);
-    }
-    if (success) {
-      setSuccess(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors([]);
-    setSuccess(false);
     setIsSubmitting(true);
 
     try {
-      await registerUser(formData);
-      setSuccess(true);
-      // Reset form on success
-      setFormData({
-        email: "",
-        password: "",
-        firstName: "",
-        lastName: "",
-        birthday: "",
-      });
+      await register(formData);
     } catch (error: unknown) {
       if (error && typeof error === "object" && "errors" in error) {
         const registerError = error as { errors: string[] };
@@ -182,7 +170,6 @@ export function RegisterForm() {
               />
             </div>
 
-            {/* Error Messages */}
             {errors.length > 0 && (
               <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
                 <ul className="list-disc list-inside space-y-1">
@@ -192,15 +179,6 @@ export function RegisterForm() {
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
-
-            {/* Success Message */}
-            {success && (
-              <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4 text-center">
-                <p className="text-sm text-green-700 font-medium">
-                  Registration successful! You can now log in.
-                </p>
               </div>
             )}
 
