@@ -9,6 +9,10 @@ vi.mock("../src/services/api", () => ({
   logoutUser: vi.fn(),
 }));
 
+vi.mock("../src/components/LandingPage", () => ({
+  LandingPage: () => <div data-testid="landing-page">Landing Page</div>,
+}));
+
 vi.mock("../src/components/AuthPage", () => ({
   AuthPage: () => <div data-testid="auth-page">Auth Page</div>,
 }));
@@ -18,12 +22,12 @@ describe("App", () => {
     vi.clearAllMocks();
   });
 
-  it("renders the AuthPage component", async () => {
+  it("renders the LandingPage for unauthenticated users", async () => {
     render(<App />);
-    
-    // Wait for loading to complete and auth page to appear
+
+    // Wait for loading to complete and landing page to appear
     await waitFor(() => {
-      expect(screen.getByTestId("auth-page")).toBeInTheDocument();
+      expect(screen.getByTestId("landing-page")).toBeInTheDocument();
     });
   });
 });
