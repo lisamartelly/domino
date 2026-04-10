@@ -1,6 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Domino.Backend;
+using Domino.Backend.Application.ActivityIdeas;
+using Domino.Backend.Application.Matches;
+using Domino.Backend.Application.Members;
 using Domino.Backend.Application.Users;
 using Domino.Backend.Utilities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -33,8 +36,11 @@ builder.Services.AddIdentity<UserModel, IdentityRole<int>>()
     .AddEntityFrameworkStores<DominoDbContext>()
     .AddDefaultTokenProviders();
 
-// Add RefreshTokenService
+// Add application services
 builder.Services.AddScoped<RefreshTokenService>();
+builder.Services.AddScoped<IActivityIdeasService, ActivityIdeasService>();
+builder.Services.AddScoped<IMembersService, MembersService>();
+builder.Services.AddScoped<IMatchesService, MatchesService>();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -60,7 +66,8 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = jwtSettings["Audience"],
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero,
-        NameClaimType = JwtRegisteredClaimNames.Sub
+        NameClaimType = JwtRegisteredClaimNames.Sub,
+        RoleClaimType = System.Security.Claims.ClaimTypes.Role
     };
 });
 
@@ -140,4 +147,34 @@ if (app.Environment.IsProduction())
     db.Database.Migrate();
 }
 
+await SeedActivityIdeasAsync(app);
+
 app.Run();
+
+static async Task SeedActivityIdeasAsync(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<DominoDbContext>();
+
+    if (await db.ActivityIdeas.AnyAsync())
+    {
+        return;
+    }
+
+    db.ActivityIdeas.AddRange(
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Coffee walk", Description = "Grab coffee and stroll around a lake or park." },
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Board game night", Description = "Meet at a board game café for a low-pressure evening." },
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Cooking class", Description = "Take an intro cooking class together." },
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Museum visit", Description = "Explore a local museum or art gallery." },
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Trivia night", Description = "Team up at a bar trivia event." },
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Farmers market", Description = "Browse a weekend farmers market together." },
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Outdoor hike", Description = "Hit a nearby trail for a casual hike." },
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Live music", Description = "Catch a local band or open mic night." },
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Picnic in the park", Description = "Pack snacks and enjoy a picnic." },
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Pottery class", Description = "Try a one-time pottery or ceramics workshop." },
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Escape room", Description = "Work together to solve an escape room." },
+        new Domino.Backend.Application.ActivityIdeas.Models.ActivityIdeaModel { Name = "Food truck hop", Description = "Sample food from different trucks around town." }
+    );
+
+    await db.SaveChangesAsync();
+}

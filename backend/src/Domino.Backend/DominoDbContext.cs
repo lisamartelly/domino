@@ -1,6 +1,8 @@
 # pragma warning disable IDE0058
 using Domino.Backend.Application.Users;
 using Domino.Backend.Application.Surveys.Models;
+using Domino.Backend.Application.Matches.Models;
+using Domino.Backend.Application.ActivityIdeas.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +12,11 @@ namespace Domino.Backend;
 public class DominoDbContext(DbContextOptions<DominoDbContext> options) : IdentityDbContext<UserModel, IdentityRole<int>, int>(options)
 {
     public DbSet<SurveyModel> Surveys => Set<SurveyModel>();
+    public DbSet<MatchModel> Matches => Set<MatchModel>();
+    public DbSet<MatchActivityIdeaModel> MatchActivityIdeas => Set<MatchActivityIdeaModel>();
+    public DbSet<MatchUserModel> MatchUsers => Set<MatchUserModel>();
+    public DbSet<ActivityIdeaModel> ActivityIdeas => Set<ActivityIdeaModel>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -157,5 +164,9 @@ public class DominoDbContext(DbContextOptions<DominoDbContext> options) : Identi
         builder.Entity<AnswerNumberModel>();
         builder.Entity<AnswerBooleanModel>();
         builder.Entity<AnswerChoiceModel>();
+        builder.Entity<MatchModel>();
+        builder.Entity<MatchActivityIdeaModel>();
+        builder.Entity<MatchUserModel>();
+        builder.Entity<ActivityIdeaModel>();
     }
 }

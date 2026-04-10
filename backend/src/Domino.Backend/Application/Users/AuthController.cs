@@ -127,20 +127,18 @@ public class AuthController(
 
             _ = await userManager.ResetAccessFailedCountAsync(user);
 
-            var accessToken = GenerateAccessToken(user);
+            var accessToken = await GenerateAccessTokenAsync(user);
+            var roles = await userManager.GetRolesAsync(user);
 
-            // Generate refresh token
             var refreshToken = refreshTokenService.GenerateRefreshToken();
             var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(
                 configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7)
             );
 
-            // Store refresh token
             await refreshTokenService.StoreRefreshTokenAsync(user, refreshToken, refreshTokenExpiresAt);
 
             Response.Cookies.Append("refreshToken", $"{user.Id}:{refreshToken}", GetRefreshTokenCookieOptions());
 
-            // Return access token in response body (stored in memory by frontend)
             return Ok(new LoginResponse
             {
                 Success = true,
@@ -151,7 +149,8 @@ public class AuthController(
                     Id = user.Id,
                     Email = user.Email!,
                     FirstName = user.FirstName,
-                    LastName = user.LastName
+                    LastName = user.LastName,
+                    Roles = roles.ToList()
                 }
             });
         }
@@ -208,8 +207,7 @@ public class AuthController(
             return Unauthorized(new { message = "Account is inactive" });
         }
 
-        // Generate new access token
-        var newAccessToken = GenerateAccessToken(user);
+        var newAccessToken = await GenerateAccessTokenAsync(user);
 
         // Optionally rotate refresh token (recommended for security)
         var newRefreshToken = refreshTokenService.GenerateRefreshToken();
@@ -266,23 +264,25 @@ public class AuthController(
             return Unauthorized(new { message = "User not found or inactive" });
         }
 
+        var roles = await userManager.GetRolesAsync(user);
+
         return Ok(new UserDto
         {
             Id = user.Id,
             Email = user.Email!,
             FirstName = user.FirstName,
-            LastName = user.LastName
+            LastName = user.LastName,
+            Roles = roles.ToList()
         });
     }
 
-    private string GenerateAccessToken(UserModel user)
+    private async Task<string> GenerateAccessTokenAsync(UserModel user)
     {
         var jwtSettings = configuration.GetSection("JwtSettings");
         var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") 
             ?? jwtSettings["SecretKey"]
             ?? throw new InvalidOperationException("JWT secret key not configured. Please set JWT_SECRET_KEY environment variable or JwtSettings:SecretKey in appsettings.json");
         
-        // Validate secret key length (minimum 32 bytes for HS256)
         if (secretKey.Length < 32)
         {
             throw new InvalidOperationException("JWT secret key must be at least 32 bytes (256 bits) for HS256 algorithm");
@@ -291,13 +291,20 @@ public class AuthController(
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var roles = await userManager.GetRolesAsync(user);
+
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString(CultureInfo.InvariantCulture)),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}")
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString(CultureInfo.InvariantCulture)),
+            new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}")
         };
+
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         var expirationMinutes = configuration.GetValue<int>("JwtSettings:AccessTokenExpirationMinutes", 15);
         var token = new JwtSecurityToken(

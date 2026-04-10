@@ -22,6 +22,7 @@ export interface UserDto {
   email: string;
   firstName: string;
   lastName: string;
+  roles: string[];
 }
 
 export interface LoginResponse {
@@ -30,6 +31,21 @@ export interface LoginResponse {
   user?: UserDto;
   accessToken?: string;
 }
+
+function useMockApi(): boolean {
+  return import.meta.env.VITE_USE_MOCK === "true";
+}
+
+const mockUser: UserDto = {
+  id: "1",
+  email: "dev@example.com",
+  firstName: "Dev",
+  lastName: "User",
+  roles: ["Admin"],
+};
+
+/** Mock session email (set on login, cleared on logout). */
+let mockSessionEmail: string | null = null;
 
 // In-memory token storage (cleared on page refresh, restored via refresh token)
 let accessToken: string | null = null;
@@ -110,6 +126,10 @@ export async function tryRefreshToken(): Promise<boolean> {
 }
 
 async function refreshTokenIfNeeded(): Promise<boolean> {
+  if (useMockApi()) {
+    return false;
+  }
+
   // If refresh is already in progress, wait for it
   if (refreshPromise) {
     return refreshPromise;
@@ -149,6 +169,14 @@ async function refreshTokenIfNeeded(): Promise<boolean> {
 export const registerUser = async (
   data: RegisterRequest
 ): Promise<RegisterResponse> => {
+  if (useMockApi()) {
+    return {
+      success: true,
+      message: "Registered (mock)",
+      errors: [],
+    };
+  }
+
   const response = await fetchWithAuth("/api/auth/register", {
     method: "POST",
     body: JSON.stringify(data),
@@ -163,6 +191,15 @@ export const registerUser = async (
 };
 
 export const loginUser = async (data: LoginRequest): Promise<LoginResponse> => {
+  if (useMockApi()) {
+    mockSessionEmail = data.email;
+    return {
+      success: true,
+      user: { ...mockUser, email: data.email },
+      accessToken: "mock-access-token",
+    };
+  }
+
   const response = await fetchWithAuth("/api/auth/login", {
     method: "POST",
     body: JSON.stringify(data),
@@ -179,6 +216,12 @@ export const loginUser = async (data: LoginRequest): Promise<LoginResponse> => {
 };
 
 export const logoutUser = async (): Promise<void> => {
+  if (useMockApi()) {
+    mockSessionEmail = null;
+    clearAccessToken();
+    return;
+  }
+
   await fetchWithAuth("/api/auth/logout", {
     method: "POST",
   });
@@ -187,6 +230,16 @@ export const logoutUser = async (): Promise<void> => {
 };
 
 export const getCurrentUser = async (): Promise<UserDto> => {
+  if (useMockApi()) {
+    if (!getAccessToken()) {
+      throw new Error("Failed to get current user");
+    }
+    return {
+      ...mockUser,
+      email: mockSessionEmail ?? mockUser.email,
+    };
+  }
+
   const response = await fetchWithAuth("/api/auth/me", {
     method: "GET",
   });
@@ -195,5 +248,173 @@ export const getCurrentUser = async (): Promise<UserDto> => {
     throw new Error("Failed to get current user");
   }
 
+  return response.json();
+};
+
+// ── Activity Ideas ──
+
+export interface ActivityIdeaDto {
+  id: number;
+  name: string;
+  description: string;
+}
+
+export const getActivityIdeas = async (): Promise<ActivityIdeaDto[]> => {
+  const response = await fetchWithAuth("/api/activity-ideas");
+  if (!response.ok) throw new Error("Failed to fetch activity ideas");
+  return response.json();
+};
+
+export const createActivityIdea = async (
+  data: Omit<ActivityIdeaDto, "id">
+): Promise<ActivityIdeaDto> => {
+  const response = await fetchWithAuth("/api/activity-ideas", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("Failed to create activity idea");
+  return response.json();
+};
+
+export const updateActivityIdea = async (
+  id: number,
+  data: Omit<ActivityIdeaDto, "id">
+): Promise<ActivityIdeaDto> => {
+  const response = await fetchWithAuth(`/api/activity-ideas/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("Failed to update activity idea");
+  return response.json();
+};
+
+export const deleteActivityIdea = async (id: number): Promise<void> => {
+  const response = await fetchWithAuth(`/api/activity-ideas/${id}`, {
+    method: "DELETE",
+  });
+  if (!response.ok) throw new Error("Failed to delete activity idea");
+};
+
+// ── Members ──
+
+export interface MemberMatchStats {
+  totalMatches: number;
+  accepted: number;
+  denied: number;
+  pending: number;
+}
+
+export interface MemberDto {
+  id: number;
+  firstName: string;
+  lastName: string;
+  birthday: string;
+  matchStats: MemberMatchStats;
+}
+
+export interface PastMatchDto {
+  matchPublicId: string;
+  otherUserName: string;
+  accepted: boolean | null;
+  createdAt: string;
+}
+
+export interface MemberDetailDto extends MemberDto {
+  pastMatches: PastMatchDto[];
+}
+
+export const getMembers = async (): Promise<MemberDto[]> => {
+  const response = await fetchWithAuth("/api/members");
+  if (!response.ok) throw new Error("Failed to fetch members");
+  return response.json();
+};
+
+export const getMemberDetail = async (
+  id: number
+): Promise<MemberDetailDto> => {
+  const response = await fetchWithAuth(`/api/members/${id}`);
+  if (!response.ok) throw new Error("Failed to fetch member");
+  return response.json();
+};
+
+// ── Matches ──
+
+export interface MatchSummaryDto {
+  publicId: string;
+  otherUserName: string;
+  status: "pending" | "accepted" | "denied" | "expired";
+  createdAt: string;
+}
+
+export const getMyMatches = async (): Promise<MatchSummaryDto[]> => {
+  const response = await fetchWithAuth("/api/matches");
+  if (!response.ok) throw new Error("Failed to fetch matches");
+  return response.json();
+};
+
+export interface CreateMatchRequest {
+  userId1: number;
+  userId2: number;
+  narrative: string;
+  activityIdeaIds: number[];
+}
+
+export interface MatchUserInfo {
+  userId: number;
+  firstName: string;
+  lastInitial: string;
+  age: number;
+  accepted: boolean | null;
+}
+
+export interface MatchActivityIdea {
+  id: number;
+  name: string;
+  description: string;
+}
+
+export interface MatchDetailDto {
+  publicId: string;
+  narrative: string;
+  users: MatchUserInfo[];
+  isExpired: boolean;
+  bothAccepted: boolean;
+  activityIdeas: MatchActivityIdea[];
+  createdAt: string;
+  currentUserAccepted: boolean | null;
+}
+
+export const createMatch = async (
+  data: CreateMatchRequest
+): Promise<{ publicId: string }> => {
+  const response = await fetchWithAuth("/api/matches", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to create match");
+  }
+  return response.json();
+};
+
+export const getMatch = async (publicId: string): Promise<MatchDetailDto> => {
+  const response = await fetchWithAuth(`/api/matches/${publicId}`);
+  if (!response.ok) throw new Error("Failed to fetch match");
+  return response.json();
+};
+
+export const respondToMatch = async (
+  publicId: string,
+  accepted: boolean
+): Promise<{ accepted: boolean; bothAccepted: boolean }> => {
+  const response = await fetchWithAuth(`/api/matches/${publicId}/respond`, {
+    method: "POST",
+    body: JSON.stringify({ accepted }),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to respond to match");
+  }
   return response.json();
 };
