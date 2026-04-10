@@ -34,6 +34,8 @@ namespace Domino.Backend.Migrations
                 {
                     id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    public_id = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    narrative = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
                     created_by_user_id = table.Column<int>(type: "integer", nullable: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
@@ -125,6 +127,12 @@ namespace Domino.Backend.Migrations
                 name: "IX_match_users_user_id",
                 table: "match_users",
                 column: "user_id");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_match_public_id",
+                table: "matches",
+                column: "public_id",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_matches_created_by_user_id",

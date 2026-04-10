@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Domino.Backend.Migrations
 {
     [DbContext(typeof(DominoDbContext))]
-    [Migration("20260408024828_MatchSchema")]
+    [Migration("20260408192717_MatchSchema")]
     partial class MatchSchema
     {
         /// <inheritdoc />
@@ -110,6 +110,18 @@ namespace Domino.Backend.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("created_by_user_id");
 
+                    b.Property<string>("Narrative")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("narrative");
+
+                    b.Property<string>("PublicId")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("public_id");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -117,6 +129,9 @@ namespace Domino.Backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex(new[] { "PublicId" }, "idx_match_public_id")
+                        .IsUnique();
 
                     b.ToTable("matches");
                 });

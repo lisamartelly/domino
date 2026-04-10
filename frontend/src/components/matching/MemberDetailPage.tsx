@@ -1,15 +1,43 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getMemberById } from "../../data/mockMembers";
+import { getMemberDetail, type MemberDetailDto } from "../../services/api";
 import { useMatchFlow } from "../../contexts/MatchFlowContext";
+import { toMatchMember } from "../../types/matching";
 
 export function MemberDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addToMatch } = useMatchFlow();
   const [notice, setNotice] = useState<string | null>(null);
+  const [member, setMember] = useState<MemberDetailDto | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const member = id ? getMemberById(id) : undefined;
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    setLoading(true);
+    getMemberDetail(parseInt(id, 10))
+      .then((data) => {
+        if (!cancelled) setMember(data);
+      })
+      .catch(() => {
+        if (!cancelled) setMember(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-charcoal-900 via-charcoal-800 to-charcoal-900 flex items-center justify-center">
+        <div className="text-cream-50">Loading...</div>
+      </div>
+    );
+  }
 
   if (!member) {
     return (
@@ -24,15 +52,20 @@ export function MemberDetailPage() {
     );
   }
 
+  const displayName = `${member.firstName} ${member.lastName}`;
+  const matchMember = toMatchMember(member);
+
   const handleAddToMatch = () => {
     setNotice(null);
-    const result = addToMatch(member);
+    const result = addToMatch(matchMember);
     if (result === "duplicate") {
       setNotice("This person is already in a match slot.");
       return;
     }
     if (result === "full") {
-      setNotice("Both slots are full. Remove someone from the match page first.");
+      setNotice(
+        "Both slots are full. Remove someone from the match page first."
+      );
       return;
     }
     if (result === "complete") {
@@ -59,48 +92,67 @@ export function MemberDetailPage() {
                 👤
               </div>
               <h1 className="text-xl font-bold text-charcoal-900 text-center">
-                {member.name}
+                {displayName}
               </h1>
               <p className="text-sm text-charcoal-600 mt-1">
-                {member.city} · {member.age}
+                Age {matchMember.age}
               </p>
             </div>
 
             <div className="md:w-2/3 p-6 space-y-6">
               <div>
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-charcoal-500 mb-3">
-                  Intake
+                  Match stats
                 </h2>
-                <ul className="space-y-3">
-                  {member.intakeFull.map((row) => (
-                    <li key={row.question} className="text-sm">
-                      <span className="font-medium text-charcoal-800">
-                        {row.question}
-                      </span>
-                      <p className="text-charcoal-600 mt-0.5">{row.answer}</p>
-                    </li>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    {
+                      label: "Total",
+                      value: member.matchStats.totalMatches,
+                    },
+                    { label: "Accepted", value: member.matchStats.accepted },
+                    { label: "Denied", value: member.matchStats.denied },
+                    { label: "Pending", value: member.matchStats.pending },
+                  ].map((s) => (
+                    <div
+                      key={s.label}
+                      className="bg-white rounded-lg p-3 border border-charcoal-100 text-center"
+                    >
+                      <p className="text-2xl font-bold text-charcoal-900">
+                        {s.value}
+                      </p>
+                      <p className="text-xs text-charcoal-500">{s.label}</p>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
 
-              <div className="border-t border-charcoal-200 pt-6">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-charcoal-500 mb-3">
-                  Past matches
-                </h2>
-                <ul className="space-y-2">
-                  {member.pastMatches.map((pm) => (
-                    <li
-                      key={pm.name + pm.outcome}
-                      className="text-sm flex justify-between gap-4 border-b border-charcoal-100 pb-2 last:border-0"
-                    >
-                      <span className="font-medium text-charcoal-800">
-                        {pm.name}
-                      </span>
-                      <span className="text-charcoal-600">{pm.outcome}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              {member.pastMatches.length > 0 && (
+                <div className="border-t border-charcoal-200 pt-6">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-charcoal-500 mb-3">
+                    Past matches
+                  </h2>
+                  <ul className="space-y-2">
+                    {member.pastMatches.map((pm) => (
+                      <li
+                        key={pm.matchPublicId}
+                        className="text-sm flex justify-between gap-4 border-b border-charcoal-100 pb-2 last:border-0"
+                      >
+                        <span className="font-medium text-charcoal-800">
+                          {pm.otherUserName}
+                        </span>
+                        <span className="text-charcoal-600">
+                          {pm.accepted === true
+                            ? "Accepted"
+                            : pm.accepted === false
+                              ? "Denied"
+                              : "Pending"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
 

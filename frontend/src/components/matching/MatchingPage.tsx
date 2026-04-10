@@ -1,7 +1,8 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { mockMembers } from "../../data/mockMembers";
+import { getMembers, type MemberDto } from "../../services/api";
 import { useMatchFlow } from "../../contexts/MatchFlowContext";
-import type { MatchMember } from "../../types/matching";
+import { toMatchMember, type MatchMember } from "../../types/matching";
 
 function SlotCard({
   label,
@@ -43,6 +44,27 @@ function SlotCard({
 export function MatchingPage() {
   const navigate = useNavigate();
   const { slot0, slot1, removeFromSlot } = useMatchFlow();
+  const [members, setMembers] = useState<MatchMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    getMembers()
+      .then((data: MemberDto[]) => {
+        if (!cancelled) setMembers(data.map(toMatchMember));
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-charcoal-900 via-charcoal-800 to-charcoal-900 text-cream-50 p-4 md:p-8">
@@ -53,35 +75,8 @@ export function MatchingPage() {
               Match
             </h1>
             <p className="text-charcoal-300 text-sm mt-1">
-              Pick two people from the table, then review and send or save a
-              draft.
+              Pick two people from the table, then review and send.
             </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              title="Coming soon"
-              className="px-3 py-2 rounded-lg bg-charcoal-700 text-charcoal-200 text-sm cursor-not-allowed opacity-70"
-              disabled
-            >
-              Generate
-            </button>
-            <button
-              type="button"
-              title="Coming soon"
-              className="px-3 py-2 rounded-lg bg-charcoal-700 text-charcoal-200 text-sm cursor-not-allowed opacity-70"
-              disabled
-            >
-              Manual
-            </button>
-            <button
-              type="button"
-              title="Filters to suggestions — coming soon"
-              className="px-3 py-2 rounded-lg border border-charcoal-500 text-cream-50 text-sm cursor-not-allowed opacity-70"
-              disabled
-            >
-              Filters
-            </button>
           </div>
         </header>
 
@@ -110,77 +105,73 @@ export function MatchingPage() {
               Click a row to open detail and add to a match slot.
             </p>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-charcoal-900">
-              <thead>
-                <tr className="bg-charcoal-100 border-b border-charcoal-200">
-                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                    Name
-                  </th>
-                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                    City
-                  </th>
-                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                    Age
-                  </th>
-                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                    Orientation
-                  </th>
-                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                    Sex
-                  </th>
-                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                    Ghosted match
-                  </th>
-                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                    Denials
-                  </th>
-                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                    Successes
-                  </th>
-                  <th className="px-3 py-2 font-semibold whitespace-nowrap">
-                    Date score
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {mockMembers.map((m) => (
-                  <tr
-                    key={m.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => navigate(`/match/member/${m.id}`)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        navigate(`/match/member/${m.id}`);
-                      }
-                    }}
-                    className="border-b border-charcoal-100 hover:bg-primary-50 cursor-pointer transition-colors"
-                  >
-                    <td className="px-3 py-3 align-top">
-                      <div className="font-medium">{m.name}</div>
-                      <div className="text-xs text-charcoal-500 mt-1 max-w-[200px]">
-                        {m.intakePreview.join(" · ")}
-                      </div>
-                    </td>
-                    <td className="px-3 py-3 whitespace-nowrap">{m.city}</td>
-                    <td className="px-3 py-3">{m.age}</td>
-                    <td className="px-3 py-3 whitespace-nowrap">
-                      {m.orientation}
-                    </td>
-                    <td className="px-3 py-3">{m.sex}</td>
-                    <td className="px-3 py-3">{m.ghostedMatch}</td>
-                    <td className="px-3 py-3">{m.denials}</td>
-                    <td className="px-3 py-3">{m.successes}</td>
-                    <td className="px-3 py-3 font-medium text-primary-700">
-                      {m.dateScore}
-                    </td>
+
+          {loading && (
+            <div className="p-8 text-center text-charcoal-500">
+              Loading members...
+            </div>
+          )}
+
+          {error && (
+            <div className="p-8 text-center text-red-600">{error}</div>
+          )}
+
+          {!loading && !error && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-charcoal-900">
+                <thead>
+                  <tr className="bg-charcoal-100 border-b border-charcoal-200">
+                    <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                      Name
+                    </th>
+                    <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                      Age
+                    </th>
+                    <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                      Total matches
+                    </th>
+                    <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                      Accepted
+                    </th>
+                    <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                      Denied
+                    </th>
+                    <th className="px-3 py-2 font-semibold whitespace-nowrap">
+                      Pending
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {members.map((m) => (
+                    <tr
+                      key={m.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate(`/match/member/${m.id}`)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          navigate(`/match/member/${m.id}`);
+                        }
+                      }}
+                      className="border-b border-charcoal-100 hover:bg-primary-50 cursor-pointer transition-colors"
+                    >
+                      <td className="px-3 py-3">
+                        <div className="font-medium">{m.name}</div>
+                      </td>
+                      <td className="px-3 py-3">{m.age}</td>
+                      <td className="px-3 py-3">
+                        {m.matchStats.totalMatches}
+                      </td>
+                      <td className="px-3 py-3">{m.matchStats.accepted}</td>
+                      <td className="px-3 py-3">{m.matchStats.denied}</td>
+                      <td className="px-3 py-3">{m.matchStats.pending}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       </div>
     </div>

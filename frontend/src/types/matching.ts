@@ -1,19 +1,22 @@
-/** Member row + detail payload for the matching UI (mock-backed until APIs exist). */
-export interface MatchMember {
-  id: string;
-  name: string;
-  city: string;
+import type { MemberDto } from "../services/api";
+
+/** Extended member data used in the matchmaker UI. */
+export interface MatchMember extends MemberDto {
   age: number;
-  orientation: string;
-  sex: string;
-  ghostedMatch: number;
-  denials: number;
-  successes: number;
-  /** Score from past dates (0–100 mock scale). */
-  dateScore: number;
-  /** Short blurbs shown in the table under the name. */
-  intakePreview: string[];
-  /** Full intake Q&A for the detail view. */
-  intakeFull: { question: string; answer: string }[];
-  pastMatches: { name: string; outcome: string }[];
+  name: string;
+}
+
+export function toMatchMember(m: MemberDto): MatchMember {
+  const today = new Date();
+  const bday = new Date(m.birthday);
+  let age = today.getFullYear() - bday.getFullYear();
+  const monthDiff = today.getMonth() - bday.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < bday.getDate())) {
+    age--;
+  }
+  return {
+    ...m,
+    age,
+    name: `${m.firstName} ${m.lastName}`,
+  };
 }

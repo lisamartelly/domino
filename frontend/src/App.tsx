@@ -11,6 +11,8 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AuthPage } from "./components/AuthPage";
 import { Dashboard } from "./components/Dashboard";
 import { MatchSection } from "./components/matching/MatchSection";
+import { MatchViewPage } from "./components/matching/MatchViewPage";
+import { ActivityIdeasPage } from "./components/ActivityIdeasPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MatchFlowProvider } from "./contexts/MatchFlowContext";
 
@@ -69,6 +71,22 @@ function AppRoutes() {
             <MatchFlowProvider>
               <MatchSection />
             </MatchFlowProvider>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/m/:publicId"
+        element={
+          <ProtectedRoute>
+            <MatchViewPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/activity-ideas"
+        element={
+          <ProtectedRoute>
+            <ActivityIdeasPage />
           </ProtectedRoute>
         }
       />
