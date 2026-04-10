@@ -65,7 +65,6 @@ export function MatchViewPage() {
 
   const currentUserId = user ? parseInt(user.id, 10) : -1;
   const isParticipant = match.users.some((u) => u.userId === currentUserId);
-  const otherUser = match.users.find((u) => u.userId !== currentUserId);
   const currentMatchUser = match.users.find(
     (u) => u.userId === currentUserId
   );
