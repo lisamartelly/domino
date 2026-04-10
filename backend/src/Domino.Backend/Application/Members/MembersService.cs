@@ -1,13 +1,22 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Domino.Backend.Application.Members;
 
 public class MembersService(DominoDbContext db) : IMembersService
 {
+    private static readonly string[] AdminRoles = ["Admin", "SuperDuperAdmin"];
+
     public async Task<List<MemberDto>> ListAsync(int excludeUserId)
     {
+        var adminRoleIds = await db.Roles
+            .Where(r => AdminRoles.Contains(r.Name!))
+            .Select(r => r.Id)
+            .ToListAsync();
+
         return await db.Users
             .Where(u => u.IsActive && u.Id != excludeUserId)
+            .Where(u => !db.Set<IdentityUserRole<int>>().Any(ur => ur.UserId == u.Id && adminRoleIds.Contains(ur.RoleId)))
             .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
             .Select(u => new MemberDto
             {

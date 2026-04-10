@@ -1,6 +1,24 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Peridot";
+  src: url("/fonts/peridot-regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Peridot";
+  src: url("/fonts/peridot-bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
+  --font-heading: "Peridot", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Peridot", "DM Sans", ui-sans-serif, system-ui, sans-serif;
   /* Primary: SEDONA (CMYK: 8,75,82,1) #DE623F */
   --color-primary-50: #fef5f3;
   --color-primary-100: #fde8e2;
@@ -78,6 +96,14 @@
   --color-cream-800: #71562f;
   --color-cream-900: #5f4829;
   --color-cream-950: #352515;
+}
+
+html {
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
 }
 
 @keyframes spin-slow {
