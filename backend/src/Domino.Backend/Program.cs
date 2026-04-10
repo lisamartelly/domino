@@ -4,6 +4,7 @@ using Domino.Backend;
 using Domino.Backend.Application.ActivityIdeas;
 using Domino.Backend.Application.Matches;
 using Domino.Backend.Application.Members;
+using Domino.Backend.Application.Surveys;
 using Domino.Backend.Application.Users;
 using Domino.Backend.Utilities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -41,6 +42,7 @@ builder.Services.AddScoped<RefreshTokenService>();
 builder.Services.AddScoped<IActivityIdeasService, ActivityIdeasService>();
 builder.Services.AddScoped<IMembersService, MembersService>();
 builder.Services.AddScoped<IMatchesService, MatchesService>();
+builder.Services.AddScoped<ISurveysService, SurveysService>();
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -148,6 +150,7 @@ if (app.Environment.IsProduction())
 }
 
 await SeedActivityIdeasAsync(app);
+await SeedIntakeSurveyAsync(app);
 
 app.Run();
 
@@ -177,4 +180,136 @@ static async Task SeedActivityIdeasAsync(WebApplication app)
     );
 
     await db.SaveChangesAsync();
+}
+
+static async Task SeedIntakeSurveyAsync(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<DominoDbContext>();
+
+    if (await db.Surveys.AnyAsync(s => s.Slug == "intake"))
+    {
+        return;
+    }
+
+    var survey = new Domino.Backend.Application.Surveys.Models.SurveyModel
+    {
+        Name = "Intake",
+        Slug = "intake",
+        Description = "Help us get to know you so we can find your best matches."
+    };
+
+    db.Surveys.Add(survey);
+    await db.SaveChangesAsync();
+
+    var version = new Domino.Backend.Application.Surveys.Models.SurveyVersionModel
+    {
+        SurveyId = survey.Id,
+        Version = 1,
+        IsActive = true,
+        PublishedAt = DateTime.UtcNow
+    };
+
+    db.Set<Domino.Backend.Application.Surveys.Models.SurveyVersionModel>().Add(version);
+    await db.SaveChangesAsync();
+
+    var questions = new[]
+    {
+        new { StableKey = "about_you", Group = (string?)"About You", Prompt = "Tell us a little about yourself.", Type = Domino.Backend.Application.Surveys.Enums.QuestionType.Text, Required = true },
+        new { StableKey = "gender", Group = (string?)"Preferences", Prompt = "What gender do you identify as?", Type = Domino.Backend.Application.Surveys.Enums.QuestionType.SingleChoice, Required = true },
+        new { StableKey = "gender_preference", Group = (string?)"Preferences", Prompt = "What gender do you prefer to be matched with?", Type = Domino.Backend.Application.Surveys.Enums.QuestionType.SingleChoice, Required = true },
+        new { StableKey = "interests", Group = (string?)"Preferences", Prompt = "Which activities interest you? (select all that apply)", Type = Domino.Backend.Application.Surveys.Enums.QuestionType.MultipleChoice, Required = true },
+        new { StableKey = "availability", Group = (string?)"Logistics", Prompt = "When are you usually free to hang out?", Type = Domino.Backend.Application.Surveys.Enums.QuestionType.MultipleChoice, Required = true },
+        new { StableKey = "anything_else", Group = (string?)"Logistics", Prompt = "Anything else you'd like us to know?", Type = Domino.Backend.Application.Surveys.Enums.QuestionType.Text, Required = false },
+    };
+
+    foreach (var q in questions)
+    {
+        var question = new Domino.Backend.Application.Surveys.Models.QuestionModel
+        {
+            StableKey = q.StableKey,
+            QuestionGroup = q.Group
+        };
+
+        db.Set<Domino.Backend.Application.Surveys.Models.QuestionModel>().Add(question);
+        await db.SaveChangesAsync();
+
+        var qv = new Domino.Backend.Application.Surveys.Models.QuestionVersionModel
+        {
+            QuestionId = question.Id,
+            SurveyVersionId = version.Id,
+            VersionNumber = 1,
+            Prompt = q.Prompt,
+            QuestionType = q.Type,
+            Required = q.Required
+        };
+
+        db.Set<Domino.Backend.Application.Surveys.Models.QuestionVersionModel>().Add(qv);
+        await db.SaveChangesAsync();
+
+        if (q.StableKey == "gender")
+        {
+            var options = new[] { ("male", "Male"), ("female", "Female"), ("non-binary", "Non-binary"), ("other", "Other") };
+            for (int i = 0; i < options.Length; i++)
+            {
+                db.Set<Domino.Backend.Application.Surveys.Models.QuestionOptionModel>().Add(
+                    new Domino.Backend.Application.Surveys.Models.QuestionOptionModel
+                    {
+                        QuestionVersionId = qv.Id,
+                        Value = options[i].Item1,
+                        DisplayValue = options[i].Item2,
+                        SortOrder = i
+                    });
+            }
+            await db.SaveChangesAsync();
+        }
+        else if (q.StableKey == "interests")
+        {
+            var options = new[] { "Outdoor activities", "Food & drinks", "Arts & culture", "Sports & fitness", "Board games & trivia", "Live music & events" };
+            for (int i = 0; i < options.Length; i++)
+            {
+                db.Set<Domino.Backend.Application.Surveys.Models.QuestionOptionModel>().Add(
+                    new Domino.Backend.Application.Surveys.Models.QuestionOptionModel
+                    {
+                        QuestionVersionId = qv.Id,
+                        Value = options[i].ToLowerInvariant().Replace(" & ", "-").Replace(" ", "-"),
+                        DisplayValue = options[i],
+                        SortOrder = i
+                    });
+            }
+            await db.SaveChangesAsync();
+        }
+        else if (q.StableKey == "availability")
+        {
+            var options = new[] { "Weekday mornings", "Weekday evenings", "Weekend mornings", "Weekend afternoons", "Weekend evenings" };
+            for (int i = 0; i < options.Length; i++)
+            {
+                db.Set<Domino.Backend.Application.Surveys.Models.QuestionOptionModel>().Add(
+                    new Domino.Backend.Application.Surveys.Models.QuestionOptionModel
+                    {
+                        QuestionVersionId = qv.Id,
+                        Value = options[i].ToLowerInvariant().Replace(" ", "-"),
+                        DisplayValue = options[i],
+                        SortOrder = i
+                    });
+            }
+            await db.SaveChangesAsync();
+        }
+        else if (q.StableKey == "gender_preference")
+        {
+            var options = new[] { ("male", "Male"), ("female", "Female"), ("no-preference", "No preference") };
+            for (int i = 0; i < options.Length; i++)
+            {
+                db.Set<Domino.Backend.Application.Surveys.Models.QuestionOptionModel>().Add(
+                    new Domino.Backend.Application.Surveys.Models.QuestionOptionModel
+                    {
+                        QuestionVersionId = qv.Id,
+                        Value = options[i].Item1,
+                        DisplayValue = options[i].Item2,
+                        SortOrder = i
+                    });
+            }
+            await db.SaveChangesAsync();
+        }
+    }
 }

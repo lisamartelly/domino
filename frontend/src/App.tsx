@@ -10,6 +10,7 @@ import {
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AuthPage } from "./components/AuthPage";
 import { LandingPage } from "./components/LandingPage";
+import { IntakePage } from "./components/IntakePage";
 import { Dashboard } from "./components/Dashboard";
 import { MatchSection } from "./components/matching/MatchSection";
 import { MatchViewPage } from "./components/matching/MatchViewPage";
@@ -19,13 +20,14 @@ import { MatchFlowProvider } from "./contexts/MatchFlowContext";
 import { AppLayout } from "./components/layout/AppLayout";
 
 function AppRoutes() {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, hasCompletedIntake, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const publicPaths = ["/", "/login"];
+  const postAuthTarget = hasCompletedIntake ? "/dashboard" : "/intake";
 
-  // Handle navigation after login
+  // Handle navigation after login/register
   useEffect(() => {
     if (
       !isLoading &&
@@ -33,11 +35,36 @@ function AppRoutes() {
       user &&
       publicPaths.includes(location.pathname)
     ) {
+      navigate(postAuthTarget, { replace: true });
+    }
+  }, [isAuthenticated, isLoading, user, location.pathname, navigate, postAuthTarget]);
+
+  // Redirect to intake if authenticated but hasn't completed it
+  useEffect(() => {
+    if (
+      !isLoading &&
+      isAuthenticated &&
+      !hasCompletedIntake &&
+      location.pathname !== "/intake" &&
+      !publicPaths.includes(location.pathname)
+    ) {
+      navigate("/intake", { replace: true });
+    }
+  }, [isAuthenticated, hasCompletedIntake, isLoading, location.pathname, navigate]);
+
+  // Redirect away from intake once completed
+  useEffect(() => {
+    if (
+      !isLoading &&
+      isAuthenticated &&
+      hasCompletedIntake &&
+      location.pathname === "/intake"
+    ) {
       navigate("/dashboard", { replace: true });
     }
-  }, [isAuthenticated, isLoading, user, location.pathname, navigate]);
+  }, [isAuthenticated, hasCompletedIntake, isLoading, location.pathname, navigate]);
 
-  // Handle navigation after logout — send to landing page, not login
+  // Handle navigation after logout
   useEffect(() => {
     if (
       !isLoading &&
@@ -61,13 +88,21 @@ function AppRoutes() {
       <Route
         path="/"
         element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />
+          isAuthenticated ? <Navigate to={postAuthTarget} replace /> : <LandingPage />
         }
       />
       <Route
         path="/login"
         element={
-          isAuthenticated ? <Navigate to="/dashboard" replace /> : <AuthPage />
+          isAuthenticated ? <Navigate to={postAuthTarget} replace /> : <AuthPage />
+        }
+      />
+      <Route
+        path="/intake"
+        element={
+          <ProtectedRoute>
+            <IntakePage />
+          </ProtectedRoute>
         }
       />
       <Route

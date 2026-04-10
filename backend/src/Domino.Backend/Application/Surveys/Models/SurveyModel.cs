@@ -7,6 +7,7 @@ namespace Domino.Backend.Application.Surveys.Models;
 
 [Table("surveys")]
 [Index(nameof(Slug), Name = "idx_survey_slug", IsUnique = true)]
+
 public class SurveyModel : IHasTimeStamps
 {
     [Key]

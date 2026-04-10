@@ -7,4 +7,5 @@ public record UserDto
     public required string FirstName { get; init; }
     public required string LastName { get; init; }
     public List<string> Roles { get; init; } = [];
+    public bool HasCompletedIntake { get; init; }
 }

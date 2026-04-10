@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Domino.Backend.Application.Users;
@@ -16,7 +17,8 @@ public class AuthController(
     UserManager<UserModel> userManager,
     RefreshTokenService refreshTokenService,
     IConfiguration configuration,
-    IWebHostEnvironment environment) : ControllerBase
+    IWebHostEnvironment environment,
+    DominoDbContext db) : ControllerBase
 {
 
     [HttpPost("register")]
@@ -61,10 +63,32 @@ public class AuthController(
             });
         }
 
-        return Ok(new RegisterResponse
+        var accessToken = await GenerateAccessTokenAsync(user);
+        var roles = await userManager.GetRolesAsync(user);
+
+        var refreshToken = refreshTokenService.GenerateRefreshToken();
+        var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(
+            configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7)
+        );
+
+        await refreshTokenService.StoreRefreshTokenAsync(user, refreshToken, refreshTokenExpiresAt);
+
+        Response.Cookies.Append("refreshToken", $"{user.Id}:{refreshToken}", GetRefreshTokenCookieOptions());
+
+        return Ok(new LoginResponse
         {
             Success = true,
-            Message = "User registered successfully"
+            Message = "Registration successful",
+            AccessToken = accessToken,
+            User = new UserDto
+            {
+                Id = user.Id,
+                Email = user.Email!,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Roles = roles.ToList(),
+                HasCompletedIntake = false
+            }
         });
     }
 
@@ -139,6 +163,8 @@ public class AuthController(
 
             Response.Cookies.Append("refreshToken", $"{user.Id}:{refreshToken}", GetRefreshTokenCookieOptions());
 
+            var hasCompletedIntake = await HasCompletedIntakeAsync(user);
+
             return Ok(new LoginResponse
             {
                 Success = true,
@@ -150,7 +176,8 @@ public class AuthController(
                     Email = user.Email!,
                     FirstName = user.FirstName,
                     LastName = user.LastName,
-                    Roles = roles.ToList()
+                    Roles = roles.ToList(),
+                    HasCompletedIntake = hasCompletedIntake
                 }
             });
         }
@@ -265,6 +292,7 @@ public class AuthController(
         }
 
         var roles = await userManager.GetRolesAsync(user);
+        var hasCompletedIntake = await HasCompletedIntakeAsync(user);
 
         return Ok(new UserDto
         {
@@ -272,7 +300,8 @@ public class AuthController(
             Email = user.Email!,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            Roles = roles.ToList()
+            Roles = roles.ToList(),
+            HasCompletedIntake = hasCompletedIntake
         });
     }
 
@@ -316,6 +345,19 @@ public class AuthController(
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private async Task<bool> HasCompletedIntakeAsync(UserModel user)
+    {
+        var roles = await userManager.GetRolesAsync(user);
+        if (roles.Contains("Admin") || roles.Contains("SuperDuperAdmin"))
+        {
+            return true;
+        }
+
+        return await db.Set<Surveys.Models.SurveyResponseModel>()
+            .AnyAsync(sr => sr.UserId == user.Id
+                && sr.SurveyVersion!.Survey!.Slug == "intake");
     }
 
     private CookieOptions GetRefreshTokenCookieOptions()
