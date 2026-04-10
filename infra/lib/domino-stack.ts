@@ -156,6 +156,20 @@ export class DominoStack extends cdk.Stack {
     });
 
     // ---------------------------------------------------------------
+    // S3 Bucket for brand assets (logos, avatars, hero images, fonts)
+    // Managed independently — upload once via CLI, not through CI/CD.
+    //   aws s3 sync frontend/public/images/ s3://<bucket>/images/
+    //   aws s3 sync frontend/public/fonts/  s3://<bucket>/fonts/
+    // CloudFront routes /images/* and /fonts/* to this bucket so
+    // paths stay the same as local dev (from public/).
+    // ---------------------------------------------------------------
+    const assetsBucket = new s3.Bucket(this, "AssetsBucket", {
+      bucketName: `domino-brand-assets-${this.account}`,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // ---------------------------------------------------------------
     // CloudFront Function — rewrites non-file URIs to /index.html
     // so React Router works on hard-refresh / direct navigation
     // ---------------------------------------------------------------
@@ -203,6 +217,18 @@ export class DominoStack extends cdk.Stack {
           originRequestPolicy:
             cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        },
+        "/images/*": {
+          origin: origins.S3BucketOrigin.withOriginAccessControl(assetsBucket),
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        },
+        "/fonts/*": {
+          origin: origins.S3BucketOrigin.withOriginAccessControl(assetsBucket),
+          viewerProtocolPolicy:
+            cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         },
       },
     });
@@ -294,6 +320,12 @@ export class DominoStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, "FrontendBucketName", {
       value: frontendBucket.bucketName,
+    });
+
+    new cdk.CfnOutput(this, "AssetsBucketName", {
+      value: assetsBucket.bucketName,
+      description:
+        "Upload brand assets: aws s3 sync frontend/public/images s3://<bucket>/images && aws s3 sync frontend/public/fonts s3://<bucket>/fonts",
     });
 
     new cdk.CfnOutput(this, "GitHubActionsRoleArn", {
