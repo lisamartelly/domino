@@ -6,6 +6,10 @@
 # dotenv files
 .env
 
+# Frontend binary assets (deployed to S3, not committed)
+frontend/public/images/
+frontend/public/fonts/
+
 # CDK
 cdk.out/
 

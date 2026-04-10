@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { AuthPage } from "../src/components/AuthPage";
 
 vi.mock("../src/components/Login", () => ({
@@ -12,6 +13,14 @@ vi.mock("../src/components/RegisterForm", () => ({
     <div data-testid="register-form-component">Register Form Component</div>
   ),
 }));
+
+function renderAuthPage(initialEntries = ["/login"]) {
+  return render(
+    <MemoryRouter initialEntries={initialEntries}>
+      <AuthPage />
+    </MemoryRouter>
+  );
+}
 
 describe("AuthPage", () => {
   beforeEach(() => {
@@ -28,7 +37,7 @@ describe("AuthPage", () => {
   });
 
   it("renders login component by default", () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     expect(screen.getByTestId("login-component")).toBeInTheDocument();
     expect(
@@ -36,8 +45,15 @@ describe("AuthPage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("renders register form when view=register query param is set", () => {
+    renderAuthPage(["/login?view=register"]);
+
+    expect(screen.getByTestId("register-form-component")).toBeInTheDocument();
+    expect(screen.queryByTestId("login-component")).not.toBeInTheDocument();
+  });
+
   it("shows sign up button when on login view", () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     expect(
       screen.getByRole("button", { name: /don't have an account\? sign up/i })
@@ -46,7 +62,7 @@ describe("AuthPage", () => {
 
   it("switches to register view when button is clicked", async () => {
     const user = userEvent.setup();
-    render(<AuthPage />);
+    renderAuthPage();
 
     const switchButton = screen.getByRole("button", {
       name: /don't have an account\? sign up/i,
@@ -61,7 +77,7 @@ describe("AuthPage", () => {
 
   it("shows sign in button when on register view", async () => {
     const user = userEvent.setup();
-    render(<AuthPage />);
+    renderAuthPage();
 
     const switchButton = screen.getByRole("button", {
       name: /don't have an account\? sign up/i,
@@ -79,7 +95,7 @@ describe("AuthPage", () => {
 
   it("switches back to login view when button is clicked from register view", async () => {
     const user = userEvent.setup();
-    render(<AuthPage />);
+    renderAuthPage();
 
     // Switch to register
     const switchToRegisterButton = screen.getByRole("button", {
@@ -106,7 +122,7 @@ describe("AuthPage", () => {
   });
 
   it("switches to login view when switchToLogin event is dispatched", async () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     // Switch to register first
     const switchButton = screen.getByRole("button", {
@@ -130,7 +146,7 @@ describe("AuthPage", () => {
   });
 
   it("switches to register view when switchToRegister event is dispatched", async () => {
-    render(<AuthPage />);
+    renderAuthPage();
 
     expect(screen.getByTestId("login-component")).toBeInTheDocument();
 
@@ -147,7 +163,7 @@ describe("AuthPage", () => {
     const addEventListenerSpy = vi.spyOn(window, "addEventListener");
     const removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
 
-    const { unmount } = render(<AuthPage />);
+    const { unmount } = renderAuthPage();
 
     expect(addEventListenerSpy).toHaveBeenCalledWith(
       "switchToLogin",

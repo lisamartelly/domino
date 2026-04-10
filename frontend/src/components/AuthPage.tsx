@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import Login from "./Login";
 import { RegisterForm } from "./RegisterForm";
 
 export function AuthPage() {
-  const [currentView, setCurrentView] = useState<"login" | "register">("login");
+  const [searchParams] = useSearchParams();
+  const initialView = searchParams.get("view") === "register" ? "register" : "login";
+  const [currentView, setCurrentView] = useState<"login" | "register">(initialView);
 
   useEffect(() => {
     const handleSwitchToLogin = () => setCurrentView("login");

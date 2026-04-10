@@ -9,17 +9,21 @@ import {
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AuthPage } from "./components/AuthPage";
+import { LandingPage } from "./components/LandingPage";
 import { Dashboard } from "./components/Dashboard";
 import { MatchSection } from "./components/matching/MatchSection";
 import { MatchViewPage } from "./components/matching/MatchViewPage";
 import { ActivityIdeasPage } from "./components/ActivityIdeasPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MatchFlowProvider } from "./contexts/MatchFlowContext";
+import { AppLayout } from "./components/layout/AppLayout";
 
 function AppRoutes() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const publicPaths = ["/", "/login"];
 
   // Handle navigation after login
   useEffect(() => {
@@ -27,16 +31,20 @@ function AppRoutes() {
       !isLoading &&
       isAuthenticated &&
       user &&
-      location.pathname === "/login"
+      publicPaths.includes(location.pathname)
     ) {
       navigate("/dashboard", { replace: true });
     }
   }, [isAuthenticated, isLoading, user, location.pathname, navigate]);
 
-  // Handle navigation after logout
+  // Handle navigation after logout — send to landing page, not login
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && location.pathname !== "/login") {
-      navigate("/login", { replace: true });
+    if (
+      !isLoading &&
+      !isAuthenticated &&
+      !publicPaths.includes(location.pathname)
+    ) {
+      navigate("/", { replace: true });
     }
   }, [isAuthenticated, isLoading, location.pathname, navigate]);
 
@@ -51,6 +59,12 @@ function AppRoutes() {
   return (
     <Routes>
       <Route
+        path="/"
+        element={
+          isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />
+        }
+      />
+      <Route
         path="/login"
         element={
           isAuthenticated ? <Navigate to="/dashboard" replace /> : <AuthPage />
@@ -60,7 +74,9 @@ function AppRoutes() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <AppLayout>
+              <Dashboard />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
@@ -68,9 +84,11 @@ function AppRoutes() {
         path="/match/*"
         element={
           <ProtectedRoute>
-            <MatchFlowProvider>
-              <MatchSection />
-            </MatchFlowProvider>
+            <AppLayout>
+              <MatchFlowProvider>
+                <MatchSection />
+              </MatchFlowProvider>
+            </AppLayout>
           </ProtectedRoute>
         }
       />
@@ -78,7 +96,9 @@ function AppRoutes() {
         path="/m/:publicId"
         element={
           <ProtectedRoute>
-            <MatchViewPage />
+            <AppLayout>
+              <MatchViewPage />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
@@ -86,11 +106,13 @@ function AppRoutes() {
         path="/activity-ideas"
         element={
           <ProtectedRoute>
-            <ActivityIdeasPage />
+            <AppLayout>
+              <ActivityIdeasPage />
+            </AppLayout>
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
