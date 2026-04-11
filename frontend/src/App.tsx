@@ -18,26 +18,25 @@ import { ActivityIdeasPage } from "./components/ActivityIdeasPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MatchFlowProvider } from "./contexts/MatchFlowContext";
 import { AppLayout } from "./components/layout/AppLayout";
+import {
+  buildReturnUrlParam,
+  resolveAfterIntakeComplete,
+  resolvePostLoginTarget,
+} from "./utils/returnUrl";
+
+function PostAuthRedirect() {
+  const { hasCompletedIntake } = useAuth();
+  const location = useLocation();
+  const to = resolvePostLoginTarget(location.search, hasCompletedIntake);
+  return <Navigate to={to} replace />;
+}
 
 function AppRoutes() {
-  const { isAuthenticated, hasCompletedIntake, isLoading, user } = useAuth();
+  const { isAuthenticated, hasCompletedIntake, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const publicPaths = ["/", "/login"];
-  const postAuthTarget = hasCompletedIntake ? "/dashboard" : "/intake";
-
-  // Handle navigation after login/register
-  useEffect(() => {
-    if (
-      !isLoading &&
-      isAuthenticated &&
-      user &&
-      publicPaths.includes(location.pathname)
-    ) {
-      navigate(postAuthTarget, { replace: true });
-    }
-  }, [isAuthenticated, isLoading, user, location.pathname, navigate, postAuthTarget]);
 
   // Redirect to intake if authenticated but hasn't completed it
   useEffect(() => {
@@ -48,9 +47,10 @@ function AppRoutes() {
       location.pathname !== "/intake" &&
       !publicPaths.includes(location.pathname)
     ) {
-      navigate("/intake", { replace: true });
+      const pending = buildReturnUrlParam(location.pathname, location.search);
+      navigate(`/intake?returnUrl=${pending}`, { replace: true });
     }
-  }, [isAuthenticated, hasCompletedIntake, isLoading, location.pathname, navigate]);
+  }, [isAuthenticated, hasCompletedIntake, isLoading, location.pathname, location.search, navigate]);
 
   // Redirect away from intake once completed
   useEffect(() => {
@@ -60,9 +60,16 @@ function AppRoutes() {
       hasCompletedIntake &&
       location.pathname === "/intake"
     ) {
-      navigate("/dashboard", { replace: true });
+      navigate(resolveAfterIntakeComplete(location.search), { replace: true });
     }
-  }, [isAuthenticated, hasCompletedIntake, isLoading, location.pathname, navigate]);
+  }, [
+    isAuthenticated,
+    hasCompletedIntake,
+    isLoading,
+    location.pathname,
+    location.search,
+    navigate,
+  ]);
 
   // Handle navigation after logout
   useEffect(() => {
@@ -88,13 +95,13 @@ function AppRoutes() {
       <Route
         path="/"
         element={
-          isAuthenticated ? <Navigate to={postAuthTarget} replace /> : <LandingPage />
+          isAuthenticated ? <PostAuthRedirect /> : <LandingPage />
         }
       />
       <Route
         path="/login"
         element={
-          isAuthenticated ? <Navigate to={postAuthTarget} replace /> : <AuthPage />
+          isAuthenticated ? <PostAuthRedirect /> : <AuthPage />
         }
       />
       <Route
