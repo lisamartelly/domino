@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -35,6 +35,8 @@ function AppRoutes() {
   const { isAuthenticated, hasCompletedIntake, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  /** Tracks auth after initial check so we only send users home on logout, not on cold deep-links while logged out. */
+  const authAfterLoad = useRef<boolean | null>(null);
 
   const publicPaths = ["/", "/login"];
 
@@ -71,15 +73,19 @@ function AppRoutes() {
     navigate,
   ]);
 
-  // Handle navigation after logout
+  // After logout (or session loss), leave protected areas — not on first load already logged out
   useEffect(() => {
+    if (isLoading) return;
+
+    const wasAuthenticated = authAfterLoad.current;
     if (
-      !isLoading &&
+      wasAuthenticated === true &&
       !isAuthenticated &&
       !publicPaths.includes(location.pathname)
     ) {
       navigate("/", { replace: true });
     }
+    authAfterLoad.current = isAuthenticated;
   }, [isAuthenticated, isLoading, location.pathname, navigate]);
 
   if (isLoading) {
