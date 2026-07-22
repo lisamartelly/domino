@@ -7,17 +7,21 @@ import { ActivityIdeasModule } from './activity-ideas/activity-ideas.module';
 import { MembersModule } from './members/members.module';
 import { SurveysModule } from './surveys/surveys.module';
 import { MatchesModule } from './matches/matches.module';
+import { StripeModule } from './stripe/stripe.module';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    StripeModule,
     HealthModule,
     AuthModule,
     ActivityIdeasModule,
     MembersModule,
     SurveysModule,
     MatchesModule,
+    EventsModule,
   ],
 })
 export class AppModule {}

@@ -18,6 +18,11 @@ import { ActivityIdeasPage } from "./components/ActivityIdeasPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MatchFlowProvider } from "./contexts/MatchFlowContext";
 import { AppLayout } from "./components/layout/AppLayout";
+import { EventsPage } from "./components/events/EventsPage";
+import { EventDetailPage } from "./components/events/EventDetailPage";
+import { EventManagePage } from "./components/events/EventManagePage";
+import { PaymentSuccessPage } from "./components/events/PaymentSuccessPage";
+import { PaymentCancelPage } from "./components/events/PaymentCancelPage";
 import {
   buildReturnUrlParam,
   resolveAfterIntakeComplete,
@@ -156,6 +161,56 @@ function AppRoutes() {
           <ProtectedRoute>
             <AppLayout>
               <ActivityIdeasPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <EventsPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events/manage"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <EventManagePage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events/payment-success"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <PaymentSuccessPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events/payment-cancel"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <PaymentCancelPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events/:id"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <EventDetailPage />
             </AppLayout>
           </ProtectedRoute>
         }

@@ -33,13 +33,17 @@ model User {
   lockoutEnabled        Boolean   @map("lockout_enabled")
   accessFailedCount     Int       @map("access_failed_count")
 
-  userClaims      UserClaim[]
-  userLogins      UserLogin[]
-  userRoles       UserRole[]
-  userTokens      UserToken[]
-  surveyResponses SurveyResponse[]
-  createdMatches  Match[]
-  matchUsers      MatchUser[]
+  stripeCustomerId      String?   @map("stripe_customer_id") @db.VarChar(255)
+
+  userClaims         UserClaim[]
+  userLogins         UserLogin[]
+  userRoles          UserRole[]
+  userTokens         UserToken[]
+  surveyResponses    SurveyResponse[]
+  createdMatches     Match[]
+  matchUsers         MatchUser[]
+  eventsCreated      Event[]             @relation("eventsCreated")
+  eventRegistrations EventRegistration[]
 
   @@index([normalizedEmail], map: "EmailIndex")
   @@map("users")
@@ -364,4 +368,69 @@ model MatchUser {
   @@index([matchId])
   @@index([userId])
   @@map("match_users")
+}
+
+// ============================================================
+// Event Tables
+// ============================================================
+
+model Event {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(255)
+  description     String   @db.VarChar(2000)
+  location        String   @db.VarChar(500)
+  costCents       Int      @map("cost_cents")
+  capacity        Int?
+  startTime       DateTime @map("start_time") @db.Timestamptz()
+  durationMinutes Int      @map("duration_minutes")
+  frequencyType   String   @map("frequency_type") @db.VarChar(50)
+  frequencyCount  Int      @default(1) @map("frequency_count")
+  status          String   @default("draft") @db.VarChar(50)
+  createdByUserId Int      @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  createdByUser User               @relation("eventsCreated", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  occurrences   EventOccurrence[]
+  registrations EventRegistration[]
+
+  @@index([createdByUserId])
+  @@index([status])
+  @@map("events")
+}
+
+model EventOccurrence {
+  id          Int      @id @default(autoincrement())
+  eventId     Int      @map("event_id")
+  startTime   DateTime @map("start_time") @db.Timestamptz()
+  endTime     DateTime @map("end_time") @db.Timestamptz()
+  isCancelled Boolean  @default(false) @map("is_cancelled")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_occurrences")
+}
+
+model EventRegistration {
+  id                    Int      @id @default(autoincrement())
+  eventId               Int      @map("event_id")
+  userId                Int      @map("user_id")
+  status                String   @db.VarChar(50)
+  pricePaidCents        Int      @map("price_paid_cents")
+  stripeSessionId       String?  @map("stripe_session_id") @db.VarChar(255)
+  stripePaymentIntentId String?  @map("stripe_payment_intent_id") @db.VarChar(255)
+  registeredAt          DateTime @default(now()) @map("registered_at") @db.Timestamptz()
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+  @@map("event_registrations")
 }
