@@ -1,50 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-
-interface MatchStatsDto {
-  totalMatches: number;
-  accepted: number;
-  denied: number;
-  pending: number;
-}
-
-export interface MemberDto {
-  id: number;
-  firstName: string;
-  lastName: string;
-  birthday: string;
-  matchStats: MatchStatsDto;
-}
-
-interface PastMatchDto {
-  matchPublicId: string;
-  otherUserName: string;
-  accepted: boolean | null;
-  createdAt: Date;
-}
-
-export interface MemberDetailDto extends MemberDto {
-  pastMatches: PastMatchDto[];
-}
+import type {
+  MatchStatsDto,
+  MemberDto,
+  MemberDetailDto,
+  PastMatchDto,
+} from './dto/member.dto';
 
 @Injectable()
 export class MembersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(excludeUserId: number): Promise<MemberDto[]> {
-    const adminRoleIds = await this.prisma.role
-      .findMany({
-        where: { name: { in: ['Admin', 'SuperDuperAdmin'] } },
-        select: { id: true },
-      })
-      .then((roles) => roles.map((r) => r.id));
+    const adminRoles = await this.prisma.role.findMany({
+      where: { name: { in: ['Admin', 'SuperDuperAdmin'] } },
+      select: { id: true },
+    });
+    const adminRoleIds = adminRoles.map((r) => r.id);
 
-    const adminUserIds = await this.prisma.userRole
-      .findMany({
-        where: { roleId: { in: adminRoleIds } },
-        select: { userId: true },
-      })
-      .then((urs) => urs.map((ur) => ur.userId));
+    const adminUserRoles = await this.prisma.userRole.findMany({
+      where: { roleId: { in: adminRoleIds } },
+      select: { userId: true },
+    });
+    const adminUserIds = adminUserRoles.map((ur) => ur.userId);
 
     const users = await this.prisma.user.findMany({
       where: {
@@ -74,17 +52,19 @@ export class MembersService {
       statsMap.set(mu.userId, stats);
     }
 
+    const emptyStats: MatchStatsDto = {
+      totalMatches: 0,
+      accepted: 0,
+      denied: 0,
+      pending: 0,
+    };
+
     return users.map((u) => ({
       id: u.id,
       firstName: u.firstName,
       lastName: u.lastName,
       birthday: u.birthday.toISOString().split('T')[0],
-      matchStats: statsMap.get(u.id) ?? {
-        totalMatches: 0,
-        accepted: 0,
-        denied: 0,
-        pending: 0,
-      },
+      matchStats: statsMap.get(u.id) ?? { ...emptyStats },
     }));
   }
 

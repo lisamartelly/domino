@@ -38,8 +38,7 @@ export class MatchesController {
   ) {
     const result = await this.service.create(request, currentUser.userId);
     if (result.kind !== 'success') {
-      res.status(HttpStatus.BAD_REQUEST);
-      return { message: result.kind === 'invalid' ? result.message : '' };
+      return sendResult(res, result);
     }
 
     res.status(HttpStatus.CREATED);
