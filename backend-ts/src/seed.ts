@@ -1,22 +1,12 @@
-import { PrismaClient } from '../src/generated/prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
+import type { PrismaService } from './prisma/prisma.service';
 
-const adapter = new PrismaPg({
-  connectionString:
-    process.env.DATABASE_URL ||
-    'postgresql://user:password@localhost:5433/domino?schema=public',
-});
-
-const prisma = new PrismaClient({ adapter });
-
-async function main() {
-  await seedRoles();
-  await seedActivityIdeas();
-  await seedIntakeSurvey();
-  console.log('Seeding complete.');
+export async function seedDatabase(prisma: PrismaService): Promise<void> {
+  await seedRoles(prisma);
+  await seedActivityIdeas(prisma);
+  await seedIntakeSurvey(prisma);
 }
 
-async function seedRoles() {
+async function seedRoles(prisma: PrismaService): Promise<void> {
   const roles = ['SuperDuperAdmin', 'Admin', 'User'];
   for (const roleName of roles) {
     await prisma.role.upsert({
@@ -25,33 +15,32 @@ async function seedRoles() {
       create: { name: roleName, normalizedName: roleName.toUpperCase() },
     });
   }
-  console.log('Seeded roles.');
 }
 
-async function seedActivityIdeas() {
+async function seedActivityIdeas(prisma: PrismaService): Promise<void> {
   const count = await prisma.activityIdea.count();
   if (count > 0) return;
 
-  const ideas = [
-    { name: 'Coffee walk', description: 'Grab coffee and stroll around a lake or park.' },
-    { name: 'Board game night', description: 'Meet at a board game café for a low-pressure evening.' },
-    { name: 'Cooking class', description: 'Take an intro cooking class together.' },
-    { name: 'Museum visit', description: 'Explore a local museum or art gallery.' },
-    { name: 'Trivia night', description: 'Team up at a bar trivia event.' },
-    { name: 'Farmers market', description: 'Browse a weekend farmers market together.' },
-    { name: 'Outdoor hike', description: 'Hit a nearby trail for a casual hike.' },
-    { name: 'Live music', description: 'Catch a local band or open mic night.' },
-    { name: 'Picnic in the park', description: 'Pack snacks and enjoy a picnic.' },
-    { name: 'Pottery class', description: 'Try a one-time pottery or ceramics workshop.' },
-    { name: 'Escape room', description: 'Work together to solve an escape room.' },
-    { name: 'Food truck hop', description: 'Sample food from different trucks around town.' },
-  ];
-
-  await prisma.activityIdea.createMany({ data: ideas });
-  console.log('Seeded activity ideas.');
+  await prisma.activityIdea.createMany({
+    data: [
+      { name: 'Coffee walk', description: 'Grab coffee and stroll around a lake or park.' },
+      { name: 'Board game night', description: 'Meet at a board game café for a low-pressure evening.' },
+      { name: 'Cooking class', description: 'Take an intro cooking class together.' },
+      { name: 'Museum visit', description: 'Explore a local museum or art gallery.' },
+      { name: 'Trivia night', description: 'Team up at a bar trivia event.' },
+      { name: 'Farmers market', description: 'Browse a weekend farmers market together.' },
+      { name: 'Outdoor hike', description: 'Hit a nearby trail for a casual hike.' },
+      { name: 'Live music', description: 'Catch a local band or open mic night.' },
+      { name: 'Picnic in the park', description: 'Pack snacks and enjoy a picnic.' },
+      { name: 'Pottery class', description: 'Try a one-time pottery or ceramics workshop.' },
+      { name: 'Escape room', description: 'Work together to solve an escape room.' },
+      { name: 'Food truck hop', description: 'Sample food from different trucks around town.' },
+    ],
+  });
+  console.log('  → Seeded activity ideas');
 }
 
-async function seedIntakeSurvey() {
+async function seedIntakeSurvey(prisma: PrismaService): Promise<void> {
   const existing = await prisma.survey.findFirst({ where: { slug: 'intake' } });
   if (existing) return;
 
@@ -130,14 +119,5 @@ async function seedIntakeSurvey() {
     }
   }
 
-  console.log('Seeded intake survey.');
+  console.log('  → Seeded intake survey');
 }
-
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
