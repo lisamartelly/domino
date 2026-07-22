@@ -1,0 +1,56 @@
+---
+description: Prisma and database conventions
+globs: backend-ts/prisma/**,backend-ts/src/**/*.ts
+alwaysApply: false
+---
+
+# Prisma & Database Conventions
+
+## Existing Schema
+
+The database schema already exists from the .NET backend. The Prisma schema in `prisma/schema.prisma` must match the existing PostgreSQL tables exactly.
+
+- All tables use `snake_case` names (mapped via `@@map`)
+- All columns use `snake_case` (mapped via `@map`)
+- Model fields use `camelCase` in TypeScript
+- All domain entities have `created_at` and `updated_at` timestamps
+- All foreign keys use `ON DELETE CASCADE`
+
+## Do NOT
+
+- Do NOT rename existing database tables or columns
+- Do NOT change column types or constraints
+- Do NOT drop or recreate tables
+- Do NOT use `prisma migrate dev` against the existing database — the schema was created by .NET EF Core migrations
+
+## Prisma Client Usage
+
+```typescript
+// ✅ Use the injected PrismaService
+constructor(private readonly prisma: PrismaService) {}
+
+// ✅ Select only the fields you need for DTOs
+const user = await this.prisma.user.findUnique({
+  where: { id },
+  select: { id: true, firstName: true, lastName: true, email: true },
+});
+
+// ❌ Don't import PrismaClient directly
+import { PrismaClient } from '../generated/prisma/client';
+```
+
+## Prisma 7 Import Path
+
+Import types from the generated client (note the `/client` suffix):
+
+```typescript
+// ✅ Correct — use /client path
+import type { User, Match } from '../generated/prisma/client';
+
+// ❌ Wrong — this path doesn't resolve
+import { User } from '../generated/prisma';
+```
+
+## Seeding
+
+Seed scripts live in `prisma/seed.ts`. Run with `npx tsx prisma/seed.ts`. Seeds should use `upsert` to be idempotent.

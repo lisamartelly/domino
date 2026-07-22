@@ -1,0 +1,367 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// Identity Tables (ASP.NET Identity, snake_case)
+// ============================================================
+
+model User {
+  id                    Int       @id @default(autoincrement())
+  firstName             String    @map("first_name") @db.VarChar(100)
+  lastName              String    @map("last_name") @db.VarChar(100)
+  birthday              DateTime  @db.Date
+  isActive              Boolean   @map("is_active")
+  userName              String?   @map("user_name") @db.VarChar(256)
+  normalizedUserName    String?   @unique @map("normalized_user_name") @db.VarChar(256)
+  email                 String?   @db.VarChar(256)
+  normalizedEmail       String?   @map("normalized_email") @db.VarChar(256)
+  emailConfirmed        Boolean   @map("email_confirmed")
+  passwordHash          String?   @map("password_hash")
+  securityStamp         String?   @map("security_stamp")
+  concurrencyStamp      String?   @map("concurrency_stamp")
+  phoneNumber           String?   @map("phone_number")
+  phoneNumberConfirmed  Boolean   @map("phone_number_confirmed")
+  twoFactorEnabled      Boolean   @map("two_factor_enabled")
+  lockoutEnd            DateTime? @map("lockout_end") @db.Timestamptz()
+  lockoutEnabled        Boolean   @map("lockout_enabled")
+  accessFailedCount     Int       @map("access_failed_count")
+
+  userClaims      UserClaim[]
+  userLogins      UserLogin[]
+  userRoles       UserRole[]
+  userTokens      UserToken[]
+  surveyResponses SurveyResponse[]
+  createdMatches  Match[]
+  matchUsers      MatchUser[]
+
+  @@index([normalizedEmail], map: "EmailIndex")
+  @@map("users")
+}
+
+model Role {
+  id               Int     @id @default(autoincrement())
+  name             String? @db.VarChar(256)
+  normalizedName   String? @unique @map("normalized_name") @db.VarChar(256)
+  concurrencyStamp String? @map("concurrency_stamp")
+
+  roleClaims RoleClaim[]
+  userRoles  UserRole[]
+
+  @@map("roles")
+}
+
+model RoleClaim {
+  id         Int     @id @default(autoincrement())
+  roleId     Int     @map("role_id")
+  claimType  String? @map("claim_type")
+  claimValue String? @map("claim_value")
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@index([roleId])
+  @@map("role_claims")
+}
+
+model UserClaim {
+  id         Int     @id @default(autoincrement())
+  userId     Int     @map("user_id")
+  claimType  String? @map("claim_type")
+  claimValue String? @map("claim_value")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_claims")
+}
+
+model UserLogin {
+  loginProvider       String  @map("login_provider")
+  providerKey         String  @map("provider_key")
+  providerDisplayName String? @map("provider_display_name")
+  userId              Int     @map("user_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([loginProvider, providerKey])
+  @@index([userId])
+  @@map("user_logins")
+}
+
+model UserRole {
+  userId Int @map("user_id")
+  roleId Int @map("role_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+model UserToken {
+  userId        Int     @map("user_id")
+  loginProvider String  @map("login_provider")
+  name          String
+  value         String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, loginProvider, name])
+  @@map("user_tokens")
+}
+
+// ============================================================
+// Survey Tables
+// ============================================================
+
+model Feature {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  description String   @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  questionFeatureMaps QuestionFeatureMap[]
+
+  @@map("features")
+}
+
+model Question {
+  id            Int      @id @default(autoincrement())
+  stableKey     String   @map("stable_key") @db.VarChar(100)
+  questionGroup String?  @map("question_group") @db.VarChar(100)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  questionVersions QuestionVersion[]
+
+  @@map("questions")
+}
+
+model Survey {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  slug        String   @unique(map: "idx_survey_slug") @db.VarChar(255)
+  description String   @db.VarChar(255)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  surveyVersions SurveyVersion[]
+
+  @@map("surveys")
+}
+
+model SurveyVersion {
+  id            Int       @id @default(autoincrement())
+  surveyId      Int       @map("survey_id")
+  versionNumber Int       @map("version_number")
+  publishedAt   DateTime? @map("published_at") @db.Timestamptz()
+  isActive      Boolean   @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  survey           Survey            @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  questionVersions QuestionVersion[]
+  surveyResponses  SurveyResponse[]
+
+  @@map("survey_versions")
+}
+
+model QuestionVersion {
+  id              Int      @id @default(autoincrement())
+  questionId      Int      @map("question_id")
+  surveyVersionId Int      @map("survey_version_id")
+  versionNumber   Int      @map("version_number")
+  prompt          String   @db.VarChar(1000)
+  questionType    String   @map("question_type") @db.VarChar(255)
+  required        Boolean
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  question           Question            @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  surveyVersion      SurveyVersion       @relation(fields: [surveyVersionId], references: [id], onDelete: Cascade)
+  questionOptions    QuestionOption[]
+  questionFeatureMaps QuestionFeatureMap[]
+  answers            Answer[]
+
+  @@index([questionId])
+  @@index([surveyVersionId])
+  @@map("question_versions")
+}
+
+model SurveyResponse {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  surveyVersionId Int      @map("survey_version_id")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  surveyVersion SurveyVersion @relation(fields: [surveyVersionId], references: [id], onDelete: Cascade)
+  answers       Answer[]
+
+  @@index([userId])
+  @@index([surveyVersionId])
+  @@map("survey_responses")
+}
+
+model QuestionFeatureMap {
+  id                Int      @id @default(autoincrement())
+  questionVersionId Int      @map("question_version_id")
+  featureId         Int      @map("feature_id")
+  transformJson     String   @map("transform_json")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  questionVersion QuestionVersion @relation(fields: [questionVersionId], references: [id], onDelete: Cascade)
+  feature         Feature         @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@index([questionVersionId])
+  @@index([featureId])
+  @@map("question_feature_maps")
+}
+
+model QuestionOption {
+  id                Int      @id @default(autoincrement())
+  questionVersionId Int      @map("question_version_id")
+  value             String   @db.VarChar(1000)
+  displayValue      String   @map("display_value") @db.VarChar(1000)
+  sortOrder         Int      @map("sort_order")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  questionVersion QuestionVersion @relation(fields: [questionVersionId], references: [id], onDelete: Cascade)
+  answerChoices   AnswerChoice[]
+
+  @@index([questionVersionId])
+  @@map("question_options")
+}
+
+// TPT Answer tables - base + type-specific tables sharing the same id
+model Answer {
+  id                Int      @id @default(autoincrement())
+  surveyResponseId  Int      @map("survey_response_id")
+  questionVersionId Int      @map("question_version_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  surveyResponse  SurveyResponse  @relation(fields: [surveyResponseId], references: [id], onDelete: Cascade)
+  questionVersion QuestionVersion @relation(fields: [questionVersionId], references: [id], onDelete: Cascade)
+  answerBoolean   AnswerBoolean?
+  answerChoice    AnswerChoice?
+  answerNumber    AnswerNumber?
+  answerText      AnswerText?
+
+  @@index([surveyResponseId])
+  @@index([questionVersionId])
+  @@map("answers")
+}
+
+model AnswerBoolean {
+  id    Int     @id
+  value Boolean
+
+  answer Answer @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@map("answer_booleans")
+}
+
+model AnswerChoice {
+  id                       Int @id
+  selectedQuestionOptionId Int @map("selected_question_option_id")
+
+  answer         Answer         @relation(fields: [id], references: [id], onDelete: Cascade)
+  questionOption QuestionOption @relation(fields: [selectedQuestionOptionId], references: [id], onDelete: Cascade)
+
+  @@index([selectedQuestionOptionId])
+  @@map("answer_choices")
+}
+
+model AnswerNumber {
+  id    Int     @id
+  value Decimal @db.Decimal(10, 4)
+
+  answer Answer @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@map("answer_numbers")
+}
+
+model AnswerText {
+  id    Int    @id
+  value String @db.VarChar(1000)
+
+  answer Answer @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@map("answer_texts")
+}
+
+// ============================================================
+// Match Tables
+// ============================================================
+
+model ActivityIdea {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  description String   @db.VarChar(1000)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  matchActivityIdeas MatchActivityIdea[]
+
+  @@map("activity_ideas")
+}
+
+model Match {
+  id              Int      @id @default(autoincrement())
+  publicId        String   @unique(map: "idx_match_public_id") @map("public_id") @db.VarChar(10)
+  narrative       String   @db.VarChar(1000)
+  createdByUserId Int      @map("created_by_user_id")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  createdByUser      User                @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  matchActivityIdeas MatchActivityIdea[]
+  matchUsers         MatchUser[]
+
+  @@index([createdByUserId])
+  @@map("matches")
+}
+
+model MatchActivityIdea {
+  id             Int      @id @default(autoincrement())
+  matchId        Int      @map("match_id")
+  activityIdeaId Int      @map("activity_idea_id")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  match        Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  activityIdea ActivityIdea @relation(fields: [activityIdeaId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
+  @@index([activityIdeaId])
+  @@map("match_activity_ideas")
+}
+
+model MatchUser {
+  id        Int      @id @default(autoincrement())
+  matchId   Int      @map("match_id")
+  userId    Int      @map("user_id")
+  accepted  Boolean? @map("accepted")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
+  @@index([userId])
+  @@map("match_users")
+}

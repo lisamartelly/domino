@@ -1,0 +1,100 @@
+---
+description: NestJS backend conventions and patterns
+globs: backend-ts/**/*.ts
+alwaysApply: false
+---
+
+# NestJS Backend Conventions
+
+## Module Structure
+
+Organize by feature domain (vertical slices), matching the .NET backend's `Application/` layout:
+
+```
+src/
+  auth/           # AuthController, auth.service, DTOs, guards
+  matches/        # MatchesController, matches.service, DTOs
+  members/        # MembersController, members.service
+  surveys/        # SurveysController, surveys.service, DTOs
+  activity-ideas/ # ActivityIdeasController, service
+  health/         # HealthController
+  prisma/         # PrismaService (global)
+```
+
+DTOs and request/response types may live in a `dto/` subfolder or co-located in the service/controller file — either is fine, but keep them within the feature folder.
+
+## Naming
+
+- Files: `kebab-case` (e.g., `auth.controller.ts`, `matches.service.ts`)
+- Classes: `PascalCase` (e.g., `AuthController`, `MatchesService`)
+- Suffixes match .NET: `*Dto`, `*Request`, `*Response`, `*Result` (e.g., `UserDto`, `LoginRequest`, `LoginResponse`, `RespondResult`)
+
+## Controllers
+
+- Use class-based controllers with decorators
+- Always return typed DTOs, never raw Prisma models
+- Use `@HttpCode()` when the default status code isn't appropriate
+
+## Services
+
+- All business logic lives in services, not controllers
+- Inject `PrismaService` for database access — it's globally available
+- Use a `ServiceResult<T>` pattern for operations that can fail in expected ways, matching the .NET backend:
+
+```typescript
+// Service returns a result object
+type ServiceResult<T> =
+  | { kind: 'success'; value: T }
+  | { kind: 'not_found'; message: string }
+  | { kind: 'invalid'; message: string };
+
+// Controller maps to HTTP responses
+if (result.kind === 'not_found') return res.status(404).json({ message: result.message });
+if (result.kind === 'invalid') return res.status(400).json({ message: result.message });
+return result.value;
+```
+
+## Auth Response Shapes
+
+Auth endpoints use envelope responses with a `success` field (the frontend depends on this):
+
+```typescript
+// Login/Register success
+{ success: true, message: "Login successful", accessToken: "...", user: UserDto }
+
+// Login/Register failure
+{ success: false, message: "Invalid credentials", errors?: string[] }
+```
+
+## Route Prefixes
+
+Global prefix `api/` is set in `main.ts`. Controller routes:
+- `@Controller('health')` → `/api/health`
+- `@Controller('auth')` → `/api/auth`
+- `@Controller('matches')` → `/api/matches`
+- `@Controller('members')` → `/api/members`
+- `@Controller('surveys')` → `/api/surveys`
+- `@Controller('activity-ideas')` → `/api/activity-ideas` (kebab-case)
+
+## Auth Guards
+
+Use the established guard pattern for protected endpoints:
+
+```typescript
+// JWT required (any authenticated user)
+@UseGuards(JwtAuthGuard)
+
+// Admin-only (requires both guards)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('Admin', 'SuperDuperAdmin')
+
+// Access current user in a handler
+@CurrentUser() user: AuthenticatedUser
+```
+
+Guards, decorators, and the JWT service are exported from `AuthModule`.
+
+## Validation
+
+- Use `class-validator` decorators on all request DTOs
+- The global `ValidationPipe` is already configured with `whitelist: true`
