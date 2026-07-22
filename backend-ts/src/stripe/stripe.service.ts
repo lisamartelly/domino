@@ -7,10 +7,16 @@ export class StripeService {
   private readonly stripe: Stripe;
 
   constructor(private readonly config: ConfigService) {
-    this.stripe = new Stripe(this.config.getOrThrow<string>('STRIPE_SECRET_KEY'));
+    this.stripe = new Stripe(
+      this.config.getOrThrow<string>('STRIPE_SECRET_KEY'),
+    );
   }
 
-  async getOrCreateCustomer(userId: number, email: string, existingCustomerId?: string | null): Promise<string> {
+  async getOrCreateCustomer(
+    userId: number,
+    email: string,
+    existingCustomerId?: string | null,
+  ): Promise<string> {
     if (existingCustomerId) {
       return existingCustomerId;
     }

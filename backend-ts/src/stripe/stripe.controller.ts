@@ -24,9 +24,11 @@ export class StripeController {
     @Req() req: Request,
     @Headers('stripe-signature') signature: string,
   ) {
-    const rawBody = (req as any).rawBody as Buffer | undefined;
+    const rawBody = (req as unknown as { rawBody?: Buffer }).rawBody;
     if (!rawBody) {
-      throw new BadRequestException('Missing raw body for webhook verification');
+      throw new BadRequestException(
+        'Missing raw body for webhook verification',
+      );
     }
 
     let event;
@@ -45,9 +47,10 @@ export class StripeController {
             where: { id: parseInt(registrationId, 10) },
             data: {
               status: 'confirmed',
-              stripePaymentIntentId: typeof session.payment_intent === 'string'
-                ? session.payment_intent
-                : null,
+              stripePaymentIntentId:
+                typeof session.payment_intent === 'string'
+                  ? session.payment_intent
+                  : null,
             },
           });
         }

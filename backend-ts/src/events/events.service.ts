@@ -71,7 +71,12 @@ export class EventsService {
   ): Promise<EventDto> {
     const count = data.frequencyCount ?? 1;
     const start = new Date(data.startTime);
-    const occurrences = generateOccurrences(start, data.durationMinutes, data.frequencyType, count);
+    const occurrences = generateOccurrences(
+      start,
+      data.durationMinutes,
+      data.frequencyType,
+      count,
+    );
 
     const event = await this.prisma.event.create({
       data: {
@@ -132,24 +137,36 @@ export class EventsService {
 
     const updateData: Record<string, unknown> = {};
     if (data.name !== undefined) updateData.name = data.name;
-    if (data.description !== undefined) updateData.description = data.description;
+    if (data.description !== undefined)
+      updateData.description = data.description;
     if (data.location !== undefined) updateData.location = data.location;
     if (data.costCents !== undefined) updateData.costCents = data.costCents;
     if (data.capacity !== undefined) updateData.capacity = data.capacity;
-    if (data.startTime !== undefined) updateData.startTime = new Date(data.startTime);
-    if (data.durationMinutes !== undefined) updateData.durationMinutes = data.durationMinutes;
-    if (data.frequencyType !== undefined) updateData.frequencyType = data.frequencyType;
-    if (data.frequencyCount !== undefined) updateData.frequencyCount = data.frequencyCount;
+    if (data.startTime !== undefined)
+      updateData.startTime = new Date(data.startTime);
+    if (data.durationMinutes !== undefined)
+      updateData.durationMinutes = data.durationMinutes;
+    if (data.frequencyType !== undefined)
+      updateData.frequencyType = data.frequencyType;
+    if (data.frequencyCount !== undefined)
+      updateData.frequencyCount = data.frequencyCount;
 
     if (needsOccurrenceRegen) {
-      const startTime = data.startTime ? new Date(data.startTime) : existing.startTime;
+      const startTime = data.startTime
+        ? new Date(data.startTime)
+        : existing.startTime;
       const duration = data.durationMinutes ?? existing.durationMinutes;
       const freqType = data.frequencyType ?? existing.frequencyType;
       const freqCount = data.frequencyCount ?? existing.frequencyCount;
 
       await this.prisma.eventOccurrence.deleteMany({ where: { eventId: id } });
 
-      const occurrences = generateOccurrences(startTime, duration, freqType, freqCount);
+      const occurrences = generateOccurrences(
+        startTime,
+        duration,
+        freqType,
+        freqCount,
+      );
       await this.prisma.eventOccurrence.createMany({
         data: occurrences.map((o) => ({
           eventId: id,
@@ -174,8 +191,10 @@ export class EventsService {
   async publish(id: number): Promise<ServiceResult<EventDto>> {
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) return notFound('Event not found.');
-    if (event.status === 'cancelled') return invalid('Cannot publish a cancelled event.');
-    if (event.status === 'published') return invalid('Event is already published.');
+    if (event.status === 'cancelled')
+      return invalid('Cannot publish a cancelled event.');
+    if (event.status === 'published')
+      return invalid('Event is already published.');
 
     const updated = await this.prisma.event.update({
       where: { id },
@@ -192,7 +211,8 @@ export class EventsService {
   async cancel(id: number): Promise<ServiceResult<EventDto>> {
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) return notFound('Event not found.');
-    if (event.status === 'cancelled') return invalid('Event is already cancelled.');
+    if (event.status === 'cancelled')
+      return invalid('Event is already cancelled.');
 
     const updated = await this.prisma.event.update({
       where: { id },
@@ -251,9 +271,13 @@ export class EventsService {
     });
 
     if (!event) return notFound('Event not found.');
-    if (event.status !== 'published') return invalid('Event is not open for registration.');
+    if (event.status !== 'published')
+      return invalid('Event is not open for registration.');
 
-    if (event.capacity !== null && event._count.registrations >= event.capacity) {
+    if (
+      event.capacity !== null &&
+      event._count.registrations >= event.capacity
+    ) {
       return invalid('Event is full.');
     }
 
@@ -323,13 +347,17 @@ export class EventsService {
     return success({ registered: false, checkoutUrl });
   }
 
-  async cancelRegistration(eventId: number, userId: number): Promise<ServiceResult<boolean>> {
+  async cancelRegistration(
+    eventId: number,
+    userId: number,
+  ): Promise<ServiceResult<boolean>> {
     const registration = await this.prisma.eventRegistration.findUnique({
       where: { eventId_userId: { eventId, userId } },
     });
 
     if (!registration) return notFound('Registration not found.');
-    if (registration.status === 'cancelled') return invalid('Registration is already cancelled.');
+    if (registration.status === 'cancelled')
+      return invalid('Registration is already cancelled.');
 
     await this.prisma.eventRegistration.update({
       where: { id: registration.id },
@@ -371,7 +399,12 @@ export class EventsService {
     frequencyCount: number;
     status: string;
     createdAt: Date;
-    occurrences: Array<{ id: number; startTime: Date; endTime: Date; isCancelled: boolean }>;
+    occurrences: Array<{
+      id: number;
+      startTime: Date;
+      endTime: Date;
+      isCancelled: boolean;
+    }>;
     _count: { registrations: number };
   }): EventDto {
     return {
@@ -424,9 +457,10 @@ export class EventsService {
       frequencyCount: event.frequencyCount,
       status: event.status,
       registrationCount: event._count.registrations,
-      spotsRemaining: event.capacity !== null
-        ? Math.max(0, event.capacity - event._count.registrations)
-        : null,
+      spotsRemaining:
+        event.capacity !== null
+          ? Math.max(0, event.capacity - event._count.registrations)
+          : null,
     };
   }
 }
