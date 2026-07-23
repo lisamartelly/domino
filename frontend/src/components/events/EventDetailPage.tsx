@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import {
   getEvent,
@@ -108,7 +108,7 @@ export function EventDetailPage() {
 
   if (loading) {
     return (
-      <div className="text-charcoal-400 text-center py-12">
+      <div className="text-charcoal-400 text-center py-20">
         Loading event...
       </div>
     );
@@ -116,7 +116,7 @@ export function EventDetailPage() {
 
   if (!event) {
     return (
-      <div className="text-charcoal-400 text-center py-12">
+      <div className="text-charcoal-400 text-center py-20">
         Event not found.
       </div>
     );
@@ -132,139 +132,176 @@ export function EventDetailPage() {
       : null;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <button
-        type="button"
-        onClick={() => navigate("/events")}
-        className="text-sm text-primary-600 hover:text-primary-700 underline"
+    <div className="max-w-3xl mx-auto">
+      {/* Back link */}
+      <Link
+        to="/events"
+        className="inline-block text-sm text-charcoal-400 hover:text-primary-500 transition-colors mb-6"
       >
-        &larr; Back to Events
-      </button>
+        ← Back to Events
+      </Link>
 
-      <div className="rounded-2xl border border-charcoal-200 bg-white p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-charcoal-900">
-              {event.name}
-            </h1>
-            <span
-              className={`inline-block mt-1 text-xs font-medium px-2 py-0.5 rounded-full ${
-                event.status === "published"
-                  ? "bg-accent2-100 text-accent2-700"
-                  : event.status === "cancelled"
-                  ? "bg-primary-100 text-primary-700"
-                  : "bg-charcoal-100 text-charcoal-600"
-              }`}
-            >
-              {event.status}
-            </span>
-          </div>
-          <span
-            className={`text-xl font-bold ${
-              event.costCents === 0 ? "text-accent2-600" : "text-charcoal-900"
-            }`}
-          >
-            {formatCost(event.costCents)}
-          </span>
-        </div>
+      {/* Main card */}
+      <div className="relative">
+        {/* Subtle gradient border */}
+        <div className="absolute -inset-[1px] rounded-[26px] bg-gradient-to-br from-primary-400/20 via-accent1-400/20 to-primary-400/20" />
 
-        <p className="text-charcoal-600 mt-4">{event.description}</p>
+        <div className="relative rounded-3xl bg-white border border-charcoal-200 shadow-sm overflow-hidden">
+          {/* Accent bar */}
+          <div className="h-[3px] bg-gradient-to-r from-primary-500 via-accent1-500 to-primary-500" />
 
-        <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-charcoal-400 block">Location</span>
-            <span className="text-charcoal-900 font-medium">
-              {event.location}
-            </span>
-          </div>
-          <div>
-            <span className="text-charcoal-400 block">Duration</span>
-            <span className="text-charcoal-900 font-medium">
-              {event.durationMinutes} min
-            </span>
-          </div>
-          <div>
-            <span className="text-charcoal-400 block">Schedule</span>
-            <span className="text-charcoal-900 font-medium">
-              {frequencyLabels[event.frequencyType] ?? event.frequencyType}
-              {event.frequencyCount > 1 &&
-                ` (${event.frequencyCount} sessions)`}
-            </span>
-          </div>
-          <div>
-            <span className="text-charcoal-400 block">Spots</span>
-            <span className="text-charcoal-900 font-medium">
-              {spotsRemaining !== null
-                ? `${spotsRemaining} of ${event.capacity} remaining`
-                : "Unlimited"}
-            </span>
-          </div>
-        </div>
-
-        {error && (
-          <div className="mt-4 bg-primary-50 border border-primary-200 text-primary-700 rounded-lg px-4 py-3 text-sm">
-            {error}
-          </div>
-        )}
-
-        {event.status === "published" && (
-          <div className="mt-6">
-            {isRegistered ? (
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-accent2-700 font-medium bg-accent2-50 px-3 py-1.5 rounded-lg">
-                  Registered ({myReg!.status})
-                </span>
-                <button
-                  type="button"
-                  onClick={handleCancelRegistration}
-                  disabled={actionLoading}
-                  className="text-sm text-primary-600 hover:text-primary-700 underline disabled:opacity-50"
+          <div className="p-8">
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 mb-6">
+              <div>
+                <p className="text-primary-500 font-bold text-[11px] tracking-[0.2em] uppercase mb-2">
+                  Event
+                </p>
+                <h1 className="text-2xl md:text-3xl font-bold text-charcoal-900">
+                  {event.name}
+                </h1>
+                <span
+                  className={`inline-block mt-2 text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                    event.status === "published"
+                      ? "bg-green-100 text-green-800"
+                      : event.status === "cancelled"
+                      ? "bg-primary-100 text-primary-700"
+                      : "bg-charcoal-100 text-charcoal-600"
+                  }`}
                 >
-                  {actionLoading ? "Cancelling..." : "Cancel registration"}
-                </button>
+                  {event.status}
+                </span>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleRegister}
-                disabled={actionLoading || isFull}
-                className="bg-primary-500 hover:bg-primary-600 disabled:opacity-50 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors"
+              <span
+                className={`text-2xl font-bold shrink-0 ${
+                  event.costCents === 0
+                    ? "text-green-700"
+                    : "text-charcoal-900"
+                }`}
               >
-                {actionLoading
-                  ? "Processing..."
-                  : isFull
-                  ? "Event Full"
-                  : !isAuthenticated
-                  ? "Sign up to register"
-                  : event.costCents === 0
-                  ? "Register"
-                  : `Register - ${formatCost(event.costCents)}`}
-              </button>
+                {formatCost(event.costCents)}
+              </span>
+            </div>
+
+            {/* Description */}
+            <p className="text-charcoal-600 leading-relaxed mb-8">
+              {event.description}
+            </p>
+
+            {/* Info Grid */}
+            <div className="grid grid-cols-2 gap-5 text-sm mb-8">
+              <div className="rounded-xl bg-cream-50 p-4">
+                <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                  Location
+                </span>
+                <span className="text-charcoal-900 font-semibold">
+                  {event.location}
+                </span>
+              </div>
+              <div className="rounded-xl bg-cream-50 p-4">
+                <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                  Duration
+                </span>
+                <span className="text-charcoal-900 font-semibold">
+                  {event.durationMinutes} min
+                </span>
+              </div>
+              <div className="rounded-xl bg-cream-50 p-4">
+                <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                  Schedule
+                </span>
+                <span className="text-charcoal-900 font-semibold">
+                  {frequencyLabels[event.frequencyType] ??
+                    event.frequencyType}
+                  {event.frequencyCount > 1 &&
+                    ` (${event.frequencyCount} sessions)`}
+                </span>
+              </div>
+              <div className="rounded-xl bg-cream-50 p-4">
+                <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                  Spots
+                </span>
+                <span className="text-charcoal-900 font-semibold">
+                  {spotsRemaining !== null
+                    ? `${spotsRemaining} of ${event.capacity} remaining`
+                    : "Unlimited"}
+                </span>
+              </div>
+            </div>
+
+            {/* Error */}
+            {error && (
+              <div className="bg-primary-50 border border-primary-200 text-primary-700 rounded-xl px-4 py-3 text-sm mb-6">
+                {error}
+              </div>
+            )}
+
+            {/* Actions */}
+            {event.status === "published" && (
+              <div>
+                {isRegistered ? (
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-semibold bg-green-100 text-green-800 px-4 py-2 rounded-xl">
+                      ✓ Registered ({myReg!.status})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleCancelRegistration}
+                      disabled={actionLoading}
+                      className="text-sm text-charcoal-400 hover:text-primary-600 underline underline-offset-4 disabled:opacity-50 transition-colors"
+                    >
+                      {actionLoading
+                        ? "Cancelling..."
+                        : "Cancel registration"}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRegister}
+                    disabled={actionLoading || isFull}
+                    className="bg-primary-500 hover:bg-primary-600 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary-500/25"
+                  >
+                    {actionLoading
+                      ? "Processing..."
+                      : isFull
+                      ? "Event Full"
+                      : !isAuthenticated
+                      ? "Sign up to register"
+                      : event.costCents === 0
+                      ? "Register"
+                      : `Register — ${formatCost(event.costCents)}`}
+                  </button>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </div>
       </div>
 
       {/* Schedule */}
       {event.occurrences.length > 0 && (
-        <div className="rounded-2xl border border-charcoal-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-charcoal-900 mb-4">
+        <div className="mt-8">
+          <p className="text-primary-500 font-bold text-[11px] tracking-[0.2em] uppercase mb-2">
             Schedule
+          </p>
+          <h2 className="text-lg font-bold text-charcoal-900 mb-4">
+            Session dates
           </h2>
           <div className="space-y-2">
             {event.occurrences.map((occ, i) => (
               <div
                 key={occ.id}
-                className={`flex items-center justify-between text-sm py-2 px-3 rounded-lg ${
+                className={`flex items-center justify-between text-sm py-3 px-4 rounded-xl ${
                   occ.isCancelled
-                    ? "bg-charcoal-50 text-charcoal-400 line-through"
-                    : "bg-charcoal-50 text-charcoal-700"
+                    ? "bg-charcoal-100 text-charcoal-400 line-through"
+                    : "bg-white border border-charcoal-200 text-charcoal-700"
                 }`}
               >
-                <span>
+                <span className="font-medium">
                   Session {i + 1}: {formatDateTime(occ.startTime)}
                 </span>
-                <span>
+                <span className="text-charcoal-400">
                   {formatDateTime(occ.endTime).split(",").pop()?.trim()}
                 </span>
               </div>

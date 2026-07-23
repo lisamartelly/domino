@@ -323,7 +323,7 @@ export function IntakePage() {
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-cream-50 mb-2">
-            Welcome{user?.firstName ? `, ${user.firstName}` : ""}!
+            Welcome{user?.name ? `, ${user.name}` : ""}!
           </h1>
           <p className="text-charcoal-300">{survey.description}</p>
         </div>

@@ -17,7 +17,11 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "seed:test-users": "npx tsx scripts/seed-test-users.ts",
+    "migrate:up": "npx tsx scripts/migrate-up.ts",
+    "migrate:down": "npx tsx scripts/migrate-down.ts",
+    "migrate:status": "npx tsx scripts/migrate-status.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -54,6 +58,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^7.0.0",
+    "dotenv": "^17.4.2",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

@@ -1,8 +1,8 @@
 export interface UserDto {
   id: number;
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string;
+  pronouns: string | null;
   roles: string[];
   hasCompletedIntake: boolean;
 }

@@ -17,6 +17,6 @@ export function toMatchMember(m: MemberDto): MatchMember {
   return {
     ...m,
     age,
-    name: `${m.firstName} ${m.lastName}`,
+    name: m.lastName ? `${m.firstName} ${m.lastName}` : m.firstName,
   };
 }

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Option C — Focused Spotlight</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary-400: #f28d73;
+    --primary-500: #de623f;
+    --primary-600: #c94d2a;
+    --accent1-400: #f1c45c;
+    --accent1-500: #efae1e;
+    --accent2-200: #fbe0d9;
+    --accent2-400: #fcd3c9;
+    --charcoal-200: #d8d6d7;
+    --charcoal-300: #b9b5b7;
+    --charcoal-400: #948e91;
+    --charcoal-500: #3e3739;
+    --charcoal-800: #242021;
+    --charcoal-900: #1f1c1d;
+    --charcoal-950: #0f0d0e;
+    --cream-50: #f8f4e9;
+    --cream-100: #f5f0e0;
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--cream-50);
+    color: var(--charcoal-900);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── Icon Sidebar ── */
+  .icon-sidebar {
+    width: 64px;
+    background: var(--charcoal-950);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+    flex-shrink: 0;
+    border-right: 1px solid #2b2628;
+  }
+  .icon-sidebar .logo-mark {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--primary-500), var(--accent1-500));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 32px;
+  }
+  .icon-sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+  }
+  .icon-sidebar nav a {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--charcoal-400);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .icon-sidebar nav a:hover { background: #2b2628; color: var(--cream-50); }
+  .icon-sidebar nav a.active { background: rgba(222,98,63,0.15); color: var(--cream-50); }
+  .icon-sidebar nav a svg { width: 20px; height: 20px; }
+  .icon-sidebar .sidebar-bottom {
+    margin-top: auto;
+  }
+  .icon-sidebar .sidebar-bottom a {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--charcoal-400);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .icon-sidebar .sidebar-bottom a:hover { color: var(--cream-50); }
+
+  /* ── Main ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    overflow-y: auto;
+    min-height: 100vh;
+  }
+  .main-inner {
+    max-width: 520px;
+    width: 100%;
+  }
+
+  /* ── Timer ── */
+  .timer-bar {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .timer-bar span {
+    font-size: 13px;
+    color: var(--charcoal-400);
+    letter-spacing: 0.5px;
+  }
+  .timer-bar strong {
+    color: var(--accent1-500);
+  }
+
+  /* ── Spotlight Card ── */
+  .spotlight {
+    background: white;
+    border-radius: 28px;
+    padding: 48px 40px;
+    text-align: center;
+    position: relative;
+    box-shadow:
+      0 0 0 1px var(--charcoal-200),
+      0 8px 40px rgba(0,0,0,0.06);
+  }
+  .spotlight::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, var(--primary-400), var(--accent1-400), var(--primary-400));
+    z-index: -1;
+    opacity: 0.4;
+  }
+
+  .spotlight-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--primary-500);
+    margin-bottom: 28px;
+  }
+
+  .spotlight-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2-200), var(--accent2-400));
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 32px;
+    color: var(--primary-600);
+  }
+
+  .spotlight h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .spotlight .age {
+    font-size: 15px;
+    color: var(--charcoal-400);
+    margin-bottom: 28px;
+  }
+
+  .spotlight .narrative {
+    font-style: italic;
+    color: var(--charcoal-500);
+    font-size: 16px;
+    line-height: 1.7;
+    max-width: 400px;
+    margin: 0 auto 36px;
+  }
+  .spotlight .narrative::before {
+    content: '\201C';
+    color: var(--primary-400);
+    font-size: 32px;
+    font-style: normal;
+    line-height: 0;
+    vertical-align: -8px;
+    margin-right: 2px;
+  }
+  .spotlight .narrative::after {
+    content: '\201D';
+    color: var(--primary-400);
+    font-size: 32px;
+    font-style: normal;
+    line-height: 0;
+    vertical-align: -8px;
+    margin-left: 2px;
+  }
+
+  .spotlight-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  .btn-spotlight-accept {
+    flex: 1;
+    max-width: 180px;
+    padding: 14px 24px;
+    background: var(--accent1-500);
+    color: var(--charcoal-900);
+    font-weight: 700;
+    font-size: 16px;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-spotlight-accept:hover {
+    background: #d9950f;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(239,174,30,0.3);
+  }
+  .btn-spotlight-deny {
+    flex: 1;
+    max-width: 180px;
+    padding: 14px 24px;
+    background: none;
+    color: var(--charcoal-400);
+    font-weight: 500;
+    font-size: 16px;
+    border: 1px solid var(--charcoal-200);
+    border-radius: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .btn-spotlight-deny:hover {
+    border-color: var(--charcoal-400);
+    color: var(--charcoal-500);
+  }
+
+  /* ── Subtle Links ── */
+  .subtle-links {
+    text-align: center;
+    margin-top: 36px;
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+  }
+  .subtle-links a {
+    font-size: 13px;
+    color: var(--charcoal-400);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  .subtle-links a:hover { color: var(--primary-500); }
+  .subtle-links a span {
+    font-weight: 700;
+    color: var(--charcoal-500);
+    margin-right: 4px;
+  }
+
+  /* ── Waiting State (shown when no pending match) ── */
+  .waiting-state {
+    background: white;
+    border-radius: 28px;
+    padding: 64px 40px;
+    text-align: center;
+    box-shadow:
+      0 0 0 1px var(--charcoal-200),
+      0 8px 40px rgba(0,0,0,0.06);
+  }
+  .waiting-logo {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 28px;
+    background: linear-gradient(135deg, var(--primary-400), var(--accent1-400));
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 28px;
+    color: white;
+    animation: gentle-pulse 3s ease-in-out infinite;
+  }
+  @keyframes gentle-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.85; }
+  }
+  .waiting-state h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .waiting-state p {
+    color: var(--charcoal-400);
+    font-size: 15px;
+    max-width: 320px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<!-- Icon Sidebar -->
+<aside class="icon-sidebar">
+  <div class="logo-mark">D</div>
+  <nav>
+    <a href="#" class="active" title="Dashboard">
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955a1.126 1.126 0 0 1 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+      </svg>
+    </a>
+    <a href="#" title="Events">
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+      </svg>
+    </a>
+  </nav>
+  <div class="sidebar-bottom">
+    <a href="#" title="Log out">
+      <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+      </svg>
+    </a>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+  <div class="main-inner">
+
+    <!-- Timer -->
+    <div class="timer-bar">
+      <span><strong>18h 42m</strong> remaining to respond</span>
+    </div>
+
+    <!-- Spotlight Card: Pending Match -->
+    <div class="spotlight">
+      <div class="spotlight-label">Your Match</div>
+      <div class="spotlight-avatar">JR</div>
+      <h1>Meet James R.</h1>
+      <div class="age">Age 28</div>
+      <p class="narrative">You both love trying new restaurants and share a passion for live jazz. James recently moved to the area and is looking for genuine connections — we think you'll really hit it off.</p>
+      <div class="spotlight-actions">
+        <button class="btn-spotlight-accept">Accept</button>
+        <button class="btn-spotlight-deny">Decline</button>
+      </div>
+    </div>
+
+    <!-- Subtle navigation -->
+    <div class="subtle-links">
+      <a href="#"><span>2</span> past matches</a>
+      <a href="#"><span>3</span> upcoming events</a>
+    </div>
+
+  </div>
+</div>
+
+<!--
+  ============================================
+  ALTERNATE STATE: No pending match
+  (Uncomment this and comment out the above
+   .main-inner to see the waiting state)
+  ============================================
+-->
+<!--
+<div class="main">
+  <div class="main-inner">
+    <div class="waiting-state">
+      <div class="waiting-logo">D</div>
+      <h2>We're on it</h2>
+      <p>Your matchmakers are carefully finding your next introduction. We'll let you know as soon as someone special comes along.</p>
+    </div>
+    <div class="subtle-links">
+      <a href="#"><span>2</span> past matches</a>
+      <a href="#"><span>3</span> upcoming events</a>
+    </div>
+  </div>
+</div>
+-->
+
+</body>
+</html>

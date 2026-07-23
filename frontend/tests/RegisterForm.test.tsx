@@ -23,11 +23,17 @@ describe("RegisterForm", () => {
   it("renders all form fields", () => {
     render(<RegisterForm />);
 
-    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^name$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/pronouns/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/birthday/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^email$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/phone/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/interests/i)).toBeInTheDocument();
+    expect(screen.getByText(/close friends/i)).toBeInTheDocument();
+    expect(screen.getByText(/romance/i)).toBeInTheDocument();
+    expect(screen.getByText(/community/i)).toBeInTheDocument();
+    expect(screen.getByText(/hobbies/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /sign up/i })
     ).toBeInTheDocument();
@@ -44,17 +50,60 @@ describe("RegisterForm", () => {
     const user = userEvent.setup();
     render(<RegisterForm />);
 
-    const emailInput = screen.getByLabelText(/email address/i);
+    const nameInput = screen.getByLabelText(/^name$/i);
+    const emailInput = screen.getByLabelText(/^email$/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
-    const firstNameInput = screen.getByLabelText(/first name/i);
 
+    await user.type(nameInput, "Jane");
     await user.type(emailInput, "test@example.com");
     await user.type(passwordInput, "password123");
-    await user.type(firstNameInput, "John");
 
+    expect(nameInput).toHaveValue("Jane");
     expect(emailInput).toHaveValue("test@example.com");
     expect(passwordInput).toHaveValue("password123");
-    expect(firstNameInput).toHaveValue("John");
+  });
+
+  it("handles checkbox selection for looking for options", async () => {
+    const user = userEvent.setup();
+    render(<RegisterForm />);
+
+    const closeFriendsCheckbox = screen.getByRole("checkbox", {
+      name: /close friends/i,
+    });
+    const romanceCheckbox = screen.getByRole("checkbox", {
+      name: /romance/i,
+    });
+
+    await user.click(closeFriendsCheckbox);
+    await user.click(romanceCheckbox);
+
+    expect(closeFriendsCheckbox).toBeChecked();
+    expect(romanceCheckbox).toBeChecked();
+
+    await user.click(closeFriendsCheckbox);
+    expect(closeFriendsCheckbox).not.toBeChecked();
+  });
+
+  it("shows error if no looking for options selected", async () => {
+    const user = userEvent.setup();
+    render(<RegisterForm />);
+
+    await user.type(screen.getByLabelText(/^name$/i), "Jane");
+    await user.type(screen.getByLabelText(/pronouns/i), "she/her");
+    await user.type(screen.getByLabelText(/birthday/i), "1990-01-01");
+    await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
+    await user.type(screen.getByLabelText(/phone/i), "555-1234");
+    await user.type(screen.getByLabelText(/^password$/i), "password123");
+
+    await user.click(screen.getByRole("button", { name: /sign up/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/please select at least one option/i)
+      ).toBeInTheDocument();
+    });
+
+    expect(mockRegister).not.toHaveBeenCalled();
   });
 
   it("clears errors when user starts typing", async () => {
@@ -65,21 +114,22 @@ describe("RegisterForm", () => {
 
     render(<RegisterForm />);
 
-    const emailInput = screen.getByLabelText(/email address/i);
-    const submitButton = screen.getByRole("button", { name: /sign up/i });
-
-    await user.type(emailInput, "test@example.com");
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/first name/i), "John");
-    await user.type(screen.getByLabelText(/last name/i), "Doe");
+    await user.type(screen.getByLabelText(/^name$/i), "Jane");
+    await user.type(screen.getByLabelText(/pronouns/i), "she/her");
     await user.type(screen.getByLabelText(/birthday/i), "1990-01-01");
-    await user.click(submitButton);
+    await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
+    await user.type(screen.getByLabelText(/phone/i), "555-1234");
+    await user.type(screen.getByLabelText(/^password$/i), "password123");
+    await user.click(
+      screen.getByRole("checkbox", { name: /close friends/i })
+    );
+    await user.click(screen.getByRole("button", { name: /sign up/i }));
 
     await waitFor(() => {
       expect(screen.getByText("Email already exists")).toBeInTheDocument();
     });
 
-    await user.type(emailInput, "x");
+    await user.type(screen.getByLabelText(/^email$/i), "x");
 
     await waitFor(() => {
       expect(
@@ -94,45 +144,34 @@ describe("RegisterForm", () => {
 
     render(<RegisterForm />);
 
-    await user.type(
-      screen.getByLabelText(/email address/i),
-      "test@example.com"
-    );
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/first name/i), "John");
-    await user.type(screen.getByLabelText(/last name/i), "Doe");
+    await user.type(screen.getByLabelText(/^name$/i), "Jane Doe");
+    await user.type(screen.getByLabelText(/pronouns/i), "she/her");
     await user.type(screen.getByLabelText(/birthday/i), "1990-01-01");
+    await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
+    await user.type(screen.getByLabelText(/phone/i), "555-1234");
+    await user.type(screen.getByLabelText(/^password$/i), "password123");
+    await user.type(
+      screen.getByLabelText(/interests/i),
+      "hiking and reading"
+    );
+    await user.click(
+      screen.getByRole("checkbox", { name: /close friends/i })
+    );
+    await user.click(screen.getByRole("checkbox", { name: /community/i }));
+
     await user.click(screen.getByRole("button", { name: /sign up/i }));
 
     await waitFor(() => {
       expect(mockRegister).toHaveBeenCalledWith({
-        email: "test@example.com",
-        password: "password123",
-        firstName: "John",
-        lastName: "Doe",
+        name: "Jane Doe",
+        pronouns: "she/her",
         birthday: "1990-01-01",
+        email: "test@example.com",
+        phone: "555-1234",
+        password: "password123",
+        interests: "hiking and reading",
+        lookingFor: ["closeFriends", "community"],
       });
-    });
-  });
-
-  it("calls register on successful submission (auto-login)", async () => {
-    const user = userEvent.setup();
-    mockRegister.mockResolvedValueOnce(undefined);
-
-    render(<RegisterForm />);
-
-    await user.type(
-      screen.getByLabelText(/email address/i),
-      "test@example.com"
-    );
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/first name/i), "John");
-    await user.type(screen.getByLabelText(/last name/i), "Doe");
-    await user.type(screen.getByLabelText(/birthday/i), "1990-01-01");
-    await user.click(screen.getByRole("button", { name: /sign up/i }));
-
-    await waitFor(() => {
-      expect(mockRegister).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -144,14 +183,15 @@ describe("RegisterForm", () => {
 
     render(<RegisterForm />);
 
-    await user.type(
-      screen.getByLabelText(/email address/i),
-      "test@example.com"
-    );
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/first name/i), "John");
-    await user.type(screen.getByLabelText(/last name/i), "Doe");
+    await user.type(screen.getByLabelText(/^name$/i), "Jane");
+    await user.type(screen.getByLabelText(/pronouns/i), "she/her");
     await user.type(screen.getByLabelText(/birthday/i), "1990-01-01");
+    await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
+    await user.type(screen.getByLabelText(/phone/i), "555-1234");
+    await user.type(screen.getByLabelText(/^password$/i), "password123");
+    await user.click(
+      screen.getByRole("checkbox", { name: /close friends/i })
+    );
     await user.click(screen.getByRole("button", { name: /sign up/i }));
 
     await waitFor(() => {
@@ -166,14 +206,15 @@ describe("RegisterForm", () => {
 
     render(<RegisterForm />);
 
-    await user.type(
-      screen.getByLabelText(/email address/i),
-      "test@example.com"
-    );
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/first name/i), "John");
-    await user.type(screen.getByLabelText(/last name/i), "Doe");
+    await user.type(screen.getByLabelText(/^name$/i), "Jane");
+    await user.type(screen.getByLabelText(/pronouns/i), "she/her");
     await user.type(screen.getByLabelText(/birthday/i), "1990-01-01");
+    await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
+    await user.type(screen.getByLabelText(/phone/i), "555-1234");
+    await user.type(screen.getByLabelText(/^password$/i), "password123");
+    await user.click(
+      screen.getByRole("checkbox", { name: /close friends/i })
+    );
     await user.click(screen.getByRole("button", { name: /sign up/i }));
 
     await waitFor(() => {
@@ -193,14 +234,15 @@ describe("RegisterForm", () => {
 
     render(<RegisterForm />);
 
-    await user.type(
-      screen.getByLabelText(/email address/i),
-      "test@example.com"
-    );
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/first name/i), "John");
-    await user.type(screen.getByLabelText(/last name/i), "Doe");
+    await user.type(screen.getByLabelText(/^name$/i), "Jane");
+    await user.type(screen.getByLabelText(/pronouns/i), "she/her");
     await user.type(screen.getByLabelText(/birthday/i), "1990-01-01");
+    await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
+    await user.type(screen.getByLabelText(/phone/i), "555-1234");
+    await user.type(screen.getByLabelText(/^password$/i), "password123");
+    await user.click(
+      screen.getByRole("checkbox", { name: /close friends/i })
+    );
 
     const submitButton = screen.getByRole("button", { name: /sign up/i });
     await user.click(submitButton);
@@ -208,7 +250,7 @@ describe("RegisterForm", () => {
     await waitFor(() => {
       expect(submitButton).toBeDisabled();
       expect(submitButton).toHaveTextContent("Registering...");
-      expect(screen.getByLabelText(/email address/i)).toBeDisabled();
+      expect(screen.getByLabelText(/^email$/i)).toBeDisabled();
     });
 
     resolvePromise!(undefined);

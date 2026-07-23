@@ -15,8 +15,11 @@ datasource db {
 model User {
   id                    Int       @id @default(autoincrement())
   firstName             String    @map("first_name") @db.VarChar(100)
-  lastName              String    @map("last_name") @db.VarChar(100)
+  lastName              String    @default("") @map("last_name") @db.VarChar(100)
+  pronouns              String?   @map("pronouns") @db.VarChar(50)
   birthday              DateTime  @db.Date
+  interests             String?   @map("interests") @db.VarChar(2000)
+  lookingFor            String[]  @map("looking_for")
   isActive              Boolean   @map("is_active")
   userName              String?   @map("user_name") @db.VarChar(256)
   normalizedUserName    String?   @unique @map("normalized_user_name") @db.VarChar(256)

@@ -2,21 +2,33 @@ import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import type { RegisterRequest } from "../services/api";
 
+const LOOKING_FOR_OPTIONS = [
+  { value: "closeFriends", label: "Close Friends" },
+  { value: "romance", label: "Romance" },
+  { value: "community", label: "Community" },
+  { value: "hobbies", label: "Hobbies" },
+] as const;
+
 export function RegisterForm() {
   const { register } = useAuth();
 
   const [formData, setFormData] = useState<RegisterRequest>({
     email: "",
     password: "",
-    firstName: "",
-    lastName: "",
+    name: "",
+    pronouns: "",
     birthday: "",
+    phone: "",
+    interests: "",
+    lookingFor: [],
   });
 
   const [errors, setErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -27,9 +39,28 @@ export function RegisterForm() {
     }
   };
 
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      lookingFor: checked
+        ? [...prev.lookingFor, value]
+        : prev.lookingFor.filter((item) => item !== value),
+    }));
+    if (errors.length > 0) {
+      setErrors([]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors([]);
+
+    if (formData.lookingFor.length === 0) {
+      setErrors(["Please select at least one option for what you're looking for."]);
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -61,13 +92,75 @@ export function RegisterForm() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name Field */}
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-charcoal-700 mb-2"
+              >
+                Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border-2 border-charcoal-200 rounded-lg text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all disabled:bg-charcoal-100 disabled:cursor-not-allowed"
+                placeholder="Your name"
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {/* Pronouns Field */}
+            <div>
+              <label
+                htmlFor="pronouns"
+                className="block text-sm font-medium text-charcoal-700 mb-2"
+              >
+                Pronouns
+              </label>
+              <input
+                id="pronouns"
+                name="pronouns"
+                type="text"
+                value={formData.pronouns}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border-2 border-charcoal-200 rounded-lg text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all disabled:bg-charcoal-100 disabled:cursor-not-allowed"
+                placeholder="e.g. she/her, he/him, they/them"
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {/* Birthday Field */}
+            <div>
+              <label
+                htmlFor="birthday"
+                className="block text-sm font-medium text-charcoal-700 mb-2"
+              >
+                Birthday
+              </label>
+              <input
+                id="birthday"
+                name="birthday"
+                type="date"
+                value={formData.birthday}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border-2 border-charcoal-200 rounded-lg text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all disabled:bg-charcoal-100 disabled:cursor-not-allowed"
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
             {/* Email Field */}
             <div>
               <label
                 htmlFor="email"
                 className="block text-sm font-medium text-charcoal-700 mb-2"
               >
-                Email Address
+                Email
               </label>
               <input
                 id="email"
@@ -77,6 +170,27 @@ export function RegisterForm() {
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-white border-2 border-charcoal-200 rounded-lg text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all disabled:bg-charcoal-100 disabled:cursor-not-allowed"
                 placeholder="you@example.com"
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {/* Phone Field */}
+            <div>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-charcoal-700 mb-2"
+              >
+                Phone
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-white border-2 border-charcoal-200 rounded-lg text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all disabled:bg-charcoal-100 disabled:cursor-not-allowed"
+                placeholder="(555) 123-4567"
                 required
                 disabled={isSubmitting}
               />
@@ -107,68 +221,52 @@ export function RegisterForm() {
               </p>
             </div>
 
-            {/* First Name and Last Name Row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="firstName"
-                  className="block text-sm font-medium text-charcoal-700 mb-2"
-                >
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  name="firstName"
-                  type="text"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white border-2 border-charcoal-200 rounded-lg text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all disabled:bg-charcoal-100 disabled:cursor-not-allowed"
-                  placeholder="John"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="lastName"
-                  className="block text-sm font-medium text-charcoal-700 mb-2"
-                >
-                  Last Name
-                </label>
-                <input
-                  id="lastName"
-                  name="lastName"
-                  type="text"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white border-2 border-charcoal-200 rounded-lg text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all disabled:bg-charcoal-100 disabled:cursor-not-allowed"
-                  placeholder="Doe"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-
-            {/* Birthday Field */}
+            {/* Interests Field */}
             <div>
               <label
-                htmlFor="birthday"
+                htmlFor="interests"
                 className="block text-sm font-medium text-charcoal-700 mb-2"
               >
-                Birthday
+                Interests
               </label>
-              <input
-                id="birthday"
-                name="birthday"
-                type="date"
-                value={formData.birthday}
+              <textarea
+                id="interests"
+                name="interests"
+                value={formData.interests}
                 onChange={handleChange}
-                className="w-full px-4 py-3 bg-white border-2 border-charcoal-200 rounded-lg text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all disabled:bg-charcoal-100 disabled:cursor-not-allowed"
-                required
+                rows={3}
+                className="w-full px-4 py-3 bg-white border-2 border-charcoal-200 rounded-lg text-charcoal-900 placeholder-charcoal-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all disabled:bg-charcoal-100 disabled:cursor-not-allowed resize-none"
+                placeholder="What are you into? Hobbies, passions, things you love..."
                 disabled={isSubmitting}
               />
             </div>
+
+            {/* Looking For Checkboxes */}
+            <fieldset>
+              <legend className="block text-sm font-medium text-charcoal-700 mb-3">
+                I&apos;m looking for...
+              </legend>
+              <div className="space-y-3">
+                {LOOKING_FOR_OPTIONS.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex items-center gap-3 cursor-pointer group"
+                  >
+                    <input
+                      type="checkbox"
+                      value={option.value}
+                      checked={formData.lookingFor.includes(option.value)}
+                      onChange={handleCheckboxChange}
+                      disabled={isSubmitting}
+                      className="w-5 h-5 rounded border-2 border-charcoal-300 text-primary-500 focus:ring-primary-500 focus:ring-2 disabled:cursor-not-allowed"
+                    />
+                    <span className="text-sm text-charcoal-700 group-hover:text-charcoal-900 transition-colors">
+                      {option.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
             {errors.length > 0 && (
               <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">

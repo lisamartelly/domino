@@ -148,6 +148,28 @@ tasks:
         wait || true
 
   # ----------------------------------
+  # Database migrations
+  # ----------------------------------
+  migrate:up:
+    desc: "Apply all pending database migrations"
+    dir: backend-ts
+    cmds:
+      - npx tsx scripts/migrate-up.ts
+
+  migrate:down:
+    desc: "Roll back the last applied migration"
+    dir: backend-ts
+    cmds:
+      - npx tsx scripts/migrate-down.ts
+
+  migrate:status:
+    desc: "Show which migrations have been applied"
+    dir: backend-ts
+    cmds:
+      - npx tsx scripts/migrate-status.ts
+
+
+  # ----------------------------------
   # Start without hot reload
   # ----------------------------------
   start:

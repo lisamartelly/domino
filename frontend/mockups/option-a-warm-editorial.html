@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Option A — Warm Editorial</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary-50: #fef5f3;
+    --primary-100: #fde8e2;
+    --primary-400: #f28d73;
+    --primary-500: #de623f;
+    --primary-600: #c94d2a;
+    --accent1-100: #fdf6e1;
+    --accent1-500: #efae1e;
+    --accent1-800: #925b12;
+    --accent2-50: #fef8f7;
+    --accent2-200: #fbe0d9;
+    --accent2-400: #fcd3c9;
+    --accent2-800: #b04f3a;
+    --charcoal-50: #f7f6f6;
+    --charcoal-100: #edecec;
+    --charcoal-200: #d8d6d7;
+    --charcoal-300: #b9b5b7;
+    --charcoal-400: #948e91;
+    --charcoal-500: #3e3739;
+    --charcoal-800: #242021;
+    --charcoal-900: #1f1c1d;
+    --charcoal-950: #0f0d0e;
+    --cream-50: #f8f4e9;
+    --cream-100: #f5f0e0;
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--cream-50);
+    color: var(--charcoal-900);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 240px;
+    background: var(--charcoal-900);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .sidebar-logo {
+    padding: 24px 24px 20px;
+    border-bottom: 1px solid #2b2628;
+    position: relative;
+  }
+  .sidebar-logo::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent1-500);
+  }
+  .sidebar-logo span {
+    color: var(--cream-50);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+  }
+  .sidebar-logo small {
+    display: block;
+    color: var(--charcoal-400);
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .sidebar nav {
+    flex: 1;
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sidebar nav a {
+    display: block;
+    padding: 10px 14px;
+    border-radius: 10px;
+    color: var(--charcoal-400);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .sidebar nav a:hover { background: #2b2628; color: var(--cream-50); }
+  .sidebar nav a.active {
+    background: rgba(222, 98, 63, 0.15);
+    color: var(--cream-50);
+    border-left: 3px solid var(--accent1-500);
+    padding-left: 11px;
+  }
+  .sidebar-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #2b2628;
+  }
+  .sidebar-footer .user-name {
+    color: var(--charcoal-300);
+    font-size: 13px;
+  }
+  .sidebar-footer .logout {
+    color: var(--charcoal-400);
+    font-size: 13px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    margin-top: 8px;
+    font-family: inherit;
+  }
+  .sidebar-footer .logout:hover { color: var(--cream-50); }
+
+  /* ── Main ── */
+  .main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px 48px;
+  }
+  .main-inner {
+    max-width: 800px;
+  }
+
+  /* ── Welcome Banner ── */
+  .welcome-banner {
+    background: linear-gradient(135deg, rgba(222,98,63,0.08) 0%, rgba(239,174,30,0.10) 100%);
+    border: 1px solid rgba(222,98,63,0.15);
+    border-radius: 20px;
+    padding: 32px 36px;
+    margin-bottom: 40px;
+  }
+  .welcome-banner h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--charcoal-900);
+  }
+  .welcome-banner p {
+    color: var(--charcoal-500);
+    margin-top: 6px;
+    font-size: 15px;
+  }
+
+  /* ── Section Label ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--primary-500);
+    margin-bottom: 8px;
+  }
+  .section-heading {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+
+  /* ── Gradient Divider ── */
+  .gradient-divider {
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-500), var(--accent1-500), var(--primary-500));
+    border-radius: 2px;
+    margin: 36px 0;
+  }
+
+  /* ── Match Cards ── */
+  .match-card {
+    background: white;
+    border: 1px solid var(--charcoal-200);
+    border-left: 4px solid var(--primary-400);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    transition: box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .match-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  }
+  .match-card.pending {
+    border-left-color: var(--accent1-500);
+    background: linear-gradient(135deg, white 80%, rgba(239,174,30,0.05) 100%);
+  }
+  .avatar {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent2-200), var(--accent2-400));
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--primary-600);
+  }
+  .match-info { flex: 1; min-width: 0; }
+  .match-info .name {
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--charcoal-900);
+  }
+  .match-info .narrative {
+    color: var(--charcoal-500);
+    font-size: 14px;
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  .match-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 12px;
+    border-radius: 20px;
+  }
+  .badge.pending-badge { background: var(--accent1-100); color: var(--accent1-800); }
+  .badge.accepted-badge { background: #e8f5e9; color: #2e7d32; }
+  .badge.denied-badge { background: var(--primary-100); color: var(--primary-600); }
+  .timer {
+    font-size: 12px;
+    color: var(--charcoal-400);
+  }
+
+  .match-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .btn-accept {
+    padding: 8px 20px;
+    background: var(--accent1-500);
+    color: var(--charcoal-900);
+    font-weight: 600;
+    font-size: 13px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .btn-accept:hover { background: #d9950f; }
+  .btn-deny {
+    padding: 8px 20px;
+    background: none;
+    color: var(--charcoal-400);
+    font-weight: 500;
+    font-size: 13px;
+    border: 1px solid var(--charcoal-200);
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .btn-deny:hover { border-color: var(--charcoal-400); color: var(--charcoal-500); }
+
+  /* ── Events Row ── */
+  .events-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .event-card {
+    background: white;
+    border: 1px solid var(--charcoal-200);
+    border-left: 4px solid var(--accent2-400);
+    border-radius: 16px;
+    padding: 20px;
+    transition: box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .event-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+  .event-card h3 {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  .event-card .event-detail {
+    font-size: 13px;
+    color: var(--charcoal-500);
+  }
+  .event-card .event-cost {
+    margin-top: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--charcoal-900);
+  }
+  .event-card .event-cost.free { color: #2e7d32; }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    background: white;
+    border: 1px dashed var(--charcoal-200);
+    border-radius: 16px;
+  }
+  .empty-state p { color: var(--charcoal-400); font-size: 15px; }
+  .empty-state .subtext { font-size: 13px; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span>domino</span>
+    <small>Social Club</small>
+  </div>
+  <nav>
+    <a href="#" class="active">Dashboard</a>
+    <a href="#">Events</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-name">Sarah Mitchell</div>
+    <button class="logout">Log out</button>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<div class="main">
+  <div class="main-inner">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner">
+      <h1>Welcome back, Sarah</h1>
+      <p>Your matchmakers are working on your next introduction.</p>
+    </div>
+
+    <!-- Matches Section -->
+    <div class="section-label">Your Matches</div>
+    <h2 class="section-heading">Recent introductions</h2>
+
+    <!-- Pending match — prominent -->
+    <div class="match-card pending">
+      <div class="avatar">JR</div>
+      <div class="match-info">
+        <div class="name">James R.</div>
+        <div class="narrative">You both love trying new restaurants and share a passion for live jazz. James recently moved to the area and is looking for genuine connections.</div>
+        <div class="match-meta">
+          <span class="badge pending-badge">Pending</span>
+          <span class="timer">18h 42m left to respond</span>
+        </div>
+      </div>
+      <div class="match-card-actions">
+        <button class="btn-accept">Accept</button>
+        <button class="btn-deny">Deny</button>
+      </div>
+    </div>
+
+    <!-- Past match -->
+    <div class="match-card">
+      <div class="avatar">MT</div>
+      <div class="match-info">
+        <div class="name">Michael T.</div>
+        <div class="narrative">A shared love of hiking and coffee culture made this a natural pairing.</div>
+        <div class="match-meta">
+          <span class="badge accepted-badge">Accepted</span>
+          <span class="timer">Jul 15, 2026</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="match-card">
+      <div class="avatar">DK</div>
+      <div class="match-info">
+        <div class="name">David K.</div>
+        <div class="narrative">Both avid readers with a shared interest in local art galleries.</div>
+        <div class="match-meta">
+          <span class="badge denied-badge">Denied</span>
+          <span class="timer">Jul 8, 2026</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="gradient-divider"></div>
+
+    <!-- Events Section -->
+    <div class="section-label">Upcoming</div>
+    <h2 class="section-heading">Events near you</h2>
+
+    <div class="events-row">
+      <div class="event-card">
+        <h3>Wine &amp; Watercolors</h3>
+        <div class="event-detail">Sat, Aug 2 · 7:00 PM</div>
+        <div class="event-detail">The Corner Gallery</div>
+        <div class="event-cost">$35.00</div>
+      </div>
+      <div class="event-card">
+        <h3>Sunday Coffee Walk</h3>
+        <div class="event-detail">Sun, Aug 3 · 10:00 AM</div>
+        <div class="event-detail">Riverside Park</div>
+        <div class="event-cost free">Free</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

@@ -72,7 +72,7 @@ export function MemberDetailPage() {
     );
   }
 
-  const displayName = `${member.firstName} ${member.lastName}`;
+  const displayName = member.lastName ? `${member.firstName} ${member.lastName}` : member.firstName;
   const matchMember = toMatchMember(member);
 
   const handleAddToMatch = () => {
