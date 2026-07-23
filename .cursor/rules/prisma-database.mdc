@@ -1,27 +1,49 @@
 ---
-description: Prisma and database conventions
+description: Prisma and database conventions — all schema changes require a migration file
 globs: backend-ts/prisma/**,backend-ts/src/**/*.ts
 alwaysApply: false
 ---
 
 # Prisma & Database Conventions
 
-## Existing Schema
+## Migrations (REQUIRED)
 
-The database schema already exists from the .NET backend. The Prisma schema in `prisma/schema.prisma` must match the existing PostgreSQL tables exactly.
+**Every database schema change MUST have a corresponding SQL migration file AND a down migration.**
+
+- Migration files live in `backend-ts/prisma/migrations/`
+- Name format: `<descriptive_name>.sql` + `<descriptive_name>.down.sql`
+- Use `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` for additive changes
+- Use `IF NOT EXISTS` / `IF EXISTS` guards so migrations are idempotent
+- After writing the migration SQL, update `prisma/schema.prisma` to match, then run `npx prisma generate`
+- NEVER use `prisma db push` or `prisma migrate dev` — those are not used in this project
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm run migrate:up` | Apply all pending migrations |
+| `npm run migrate:down` | Roll back the last applied migration |
+| `npm run migrate:status` | Show applied vs pending migrations |
+
+### Example
+
+```sql
+-- add_user_bio.sql (up)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS bio VARCHAR(2000);
+
+-- add_user_bio.down.sql (rollback)
+ALTER TABLE users DROP COLUMN IF EXISTS bio;
+```
+
+## Schema Rules
 
 - All tables use `snake_case` names (mapped via `@@map`)
 - All columns use `snake_case` (mapped via `@map`)
 - Model fields use `camelCase` in TypeScript
 - All domain entities have `created_at` and `updated_at` timestamps
 - All foreign keys use `ON DELETE CASCADE`
-
-## Do NOT
-
 - Do NOT rename existing database tables or columns
-- Do NOT change column types or constraints
-- Do NOT drop or recreate tables
-- Do NOT use `prisma migrate dev` against the existing database — the schema was created by .NET EF Core migrations
+- Do NOT drop or recreate tables without explicit approval
 
 ## Prisma Client Usage
 
@@ -32,7 +54,7 @@ constructor(private readonly prisma: PrismaService) {}
 // ✅ Select only the fields you need for DTOs
 const user = await this.prisma.user.findUnique({
   where: { id },
-  select: { id: true, firstName: true, lastName: true, email: true },
+  select: { id: true, firstName: true, email: true },
 });
 
 // ❌ Don't import PrismaClient directly

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { getEvents, type EventSummaryDto } from "../../services/api";
 
 function formatCost(cents: number): string {
@@ -12,7 +12,6 @@ function formatDate(iso: string): string {
     weekday: "short",
     month: "short",
     day: "numeric",
-    year: "numeric",
   });
 }
 
@@ -34,7 +33,6 @@ export function EventsPage() {
   const [events, setEvents] = useState<EventSummaryDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     let cancelled = false;
@@ -55,7 +53,7 @@ export function EventsPage() {
 
   if (loading) {
     return (
-      <div className="text-charcoal-400 text-center py-12">
+      <div className="text-charcoal-400 text-center py-20">
         Loading events...
       </div>
     );
@@ -63,44 +61,53 @@ export function EventsPage() {
 
   if (error) {
     return (
-      <div className="bg-primary-50 border border-primary-200 text-primary-700 rounded-lg px-4 py-3 text-sm">
+      <div className="bg-primary-50 border border-primary-200 text-primary-700 rounded-xl px-4 py-3 text-sm">
         {error}
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <header>
-        <h1 className="text-2xl md:text-3xl font-bold text-charcoal-900">
-          Events
-        </h1>
-        <p className="text-charcoal-500 mt-1">
-          Browse upcoming events and register.
+    <div className="max-w-4xl mx-auto">
+      {/* Header */}
+      <div className="mb-10">
+        <p className="text-primary-500 font-bold text-[11px] tracking-[0.2em] uppercase mb-2">
+          Join Us
         </p>
-      </header>
+        <h1 className="text-2xl md:text-3xl font-bold text-charcoal-900 mb-2">
+          Upcoming Events
+        </h1>
+        <p className="text-charcoal-500 max-w-xl">
+          Meet people in person at our curated events. No pressure, just great
+          company.
+        </p>
+      </div>
 
       {events.length === 0 ? (
-        <p className="text-charcoal-400 text-center py-12">
-          No upcoming events right now. Check back soon!
-        </p>
+        <div className="rounded-2xl border border-dashed border-charcoal-200 bg-white p-12 text-center">
+          <p className="text-charcoal-400 text-[15px]">
+            No upcoming events right now
+          </p>
+          <p className="text-charcoal-300 text-sm mt-1">
+            Check back soon — we're always planning something new.
+          </p>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {events.map((event) => (
-            <button
+            <Link
               key={event.id}
-              type="button"
-              onClick={() => navigate(`/events/${event.id}`)}
-              className="rounded-2xl border border-charcoal-200 bg-white p-5 shadow-sm text-left hover:shadow-md transition-shadow border-l-4 border-l-accent2-400"
+              to={`/events/${event.id}`}
+              className="rounded-2xl border border-charcoal-200 border-l-4 border-l-accent2-400 bg-white p-6 shadow-sm hover:shadow-md transition-all group"
             >
-              <h2 className="font-semibold text-charcoal-900 text-lg">
+              <h2 className="font-bold text-charcoal-900 text-lg group-hover:text-primary-600 transition-colors">
                 {event.name}
               </h2>
-              <p className="text-sm text-charcoal-500 mt-1 line-clamp-2">
+              <p className="text-sm text-charcoal-500 mt-1.5 line-clamp-2 leading-relaxed">
                 {event.description}
               </p>
 
-              <div className="mt-4 space-y-1 text-sm text-charcoal-600">
+              <div className="mt-4 space-y-1 text-sm text-charcoal-500">
                 <div className="flex justify-between">
                   <span>{formatDate(event.startTime)}</span>
                   <span>{formatTime(event.startTime)}</span>
@@ -110,18 +117,22 @@ export function EventsPage() {
                   <span>{event.durationMinutes} min</span>
                 </div>
                 {event.frequencyType !== "ONCE" && (
-                  <div className="text-charcoal-400">
-                    {frequencyLabels[event.frequencyType] ?? event.frequencyType}{" "}
-                    &middot; {event.frequencyCount} sessions
+                  <div className="text-charcoal-400 text-xs mt-1">
+                    {frequencyLabels[event.frequencyType] ??
+                      event.frequencyType}{" "}
+                    · {event.frequencyCount} sessions
                   </div>
                 )}
               </div>
 
-              <div className="mt-4 flex items-center justify-between">
+              {/* Gradient accent line */}
+              <div className="h-[2px] bg-gradient-to-r from-primary-500/30 via-accent1-500/30 to-primary-500/30 rounded-full my-4" />
+
+              <div className="flex items-center justify-between">
                 <span
-                  className={`font-semibold ${
+                  className={`font-semibold text-sm ${
                     event.costCents === 0
-                      ? "text-accent2-600"
+                      ? "text-green-700"
                       : "text-charcoal-900"
                   }`}
                 >
@@ -133,7 +144,7 @@ export function EventsPage() {
                     : "Open"}
                 </span>
               </div>
-            </button>
+            </Link>
           ))}
         </div>
       )}

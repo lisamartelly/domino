@@ -39,9 +39,13 @@ export class AuthService {
         email: request.email,
         normalizedEmail: request.email.toUpperCase(),
         emailConfirmed: false,
-        firstName: request.firstName,
-        lastName: request.lastName,
+        firstName: request.name,
+        lastName: '',
+        pronouns: request.pronouns,
         birthday: new Date(request.birthday),
+        phoneNumber: request.phone,
+        interests: request.interests || '',
+        lookingFor: request.lookingFor,
         isActive: true,
         passwordHash,
         securityStamp: crypto.randomUUID(),
@@ -144,8 +148,7 @@ export class AuthService {
     const newAccessToken = this.jwtService.generateAccessToken({
       id: user.id,
       email: user.email!,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      name: user.firstName,
       roles,
     });
 
@@ -215,8 +218,7 @@ export class AuthService {
     const accessToken = this.jwtService.generateAccessToken({
       id: user.id,
       email: user.email!,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      name: user.firstName,
       roles,
     });
 
@@ -242,8 +244,8 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email!,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      name: user.firstName,
+      pronouns: user.pronouns,
       roles,
       hasCompletedIntake,
     };

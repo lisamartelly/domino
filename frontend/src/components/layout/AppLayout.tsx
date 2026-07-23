@@ -84,7 +84,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <div className="px-4 py-4 border-t border-charcoal-800 space-y-3">
           {user && (
             <p className="text-sm text-charcoal-300 truncate">
-              {user.firstName} {user.lastName}
+              {user.name}
             </p>
           )}
           <button

@@ -33,9 +33,12 @@ COPY --from=backend-build /app/backend/src/generated/ ./dist/src/generated/
 COPY --from=backend-build /app/backend/node_modules ./node_modules
 COPY --from=backend-build /app/backend/package.json ./
 
-# Copy Prisma schema, config, and migrations for prisma migrate deploy
+# Copy Prisma schema, config, and migrations
 COPY --from=backend-build /app/backend/prisma ./prisma
 COPY --from=backend-build /app/backend/prisma.config.ts ./prisma.config.ts
+
+# Copy migration runner scripts
+COPY --from=backend-build /app/backend/scripts ./scripts
 
 # Copy frontend build output so NestJS can serve it as static assets
 COPY --from=frontend-build /app/frontend/dist ./public

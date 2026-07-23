@@ -1,9 +1,12 @@
 export interface RegisterRequest {
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  name: string;
+  pronouns: string;
   birthday: string; // ISO date string (YYYY-MM-DD)
+  phone: string;
+  interests: string;
+  lookingFor: string[]; // 'closeFriends' | 'romance' | 'community' | 'hobbies'
 }
 
 export interface RegisterResponse {
@@ -20,8 +23,8 @@ export interface LoginRequest {
 export interface UserDto {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string;
+  pronouns: string | null;
   roles: string[];
   hasCompletedIntake: boolean;
 }
@@ -40,8 +43,8 @@ function useMockApi(): boolean {
 const mockUser: UserDto = {
   id: "1",
   email: "dev@example.com",
-  firstName: "Dev",
-  lastName: "User",
+  name: "Dev User",
+  pronouns: "they/them",
   roles: ["Admin"],
   hasCompletedIntake: true,
 };
@@ -177,8 +180,8 @@ export const registerUser = async (
       user: {
         ...mockUser,
         email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
+        name: data.name,
+        pronouns: data.pronouns,
         hasCompletedIntake: false,
       },
       accessToken: "mock-access-token",
