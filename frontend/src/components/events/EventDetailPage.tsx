@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   getEvent,
   registerForEvent,
@@ -34,6 +35,7 @@ const frequencyLabels: Record<string, string> = {
 export function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [event, setEvent] = useState<EventDto | null>(null);
   const [myReg, setMyReg] = useState<EventRegistrationDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,12 @@ export function EventDetailPage() {
   const load = () => {
     if (!id) return;
     setLoading(true);
-    Promise.all([getEvent(parseInt(id, 10)), getMyEventRegistrations()])
+    const eventPromise = getEvent(parseInt(id, 10));
+    const regsPromise = isAuthenticated
+      ? getMyEventRegistrations()
+      : Promise.resolve([] as EventRegistrationDto[]);
+
+    Promise.all([eventPromise, regsPromise])
       .then(([eventData, regs]) => {
         setEvent(eventData);
         const match = regs.find(
@@ -57,10 +64,17 @@ export function EventDetailPage() {
 
   useEffect(() => {
     load();
-  }, [id]);
+  }, [id, isAuthenticated]);
 
   const handleRegister = async () => {
     if (!event) return;
+
+    if (!isAuthenticated) {
+      const returnUrl = encodeURIComponent(`/events/${event.id}`);
+      navigate(`/login?returnUrl=${returnUrl}`);
+      return;
+    }
+
     setActionLoading(true);
     setError(null);
     try {
@@ -220,6 +234,8 @@ export function EventDetailPage() {
                   ? "Processing..."
                   : isFull
                   ? "Event Full"
+                  : !isAuthenticated
+                  ? "Sign up to register"
                   : event.costCents === 0
                   ? "Register"
                   : `Register - ${formatCost(event.costCents)}`}

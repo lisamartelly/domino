@@ -45,6 +45,8 @@ export function Dashboard() {
     };
   }, [isAdmin]);
 
+  const hasCompletedIntake = user?.hasCompletedIntake ?? true;
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
@@ -57,6 +59,21 @@ export function Dashboard() {
           </p>
         )}
       </div>
+
+      {!isAdmin && !hasCompletedIntake && (
+        <Link
+          to="/intake"
+          className="block rounded-2xl border-l-4 border-l-accent1-500 border border-charcoal-200 bg-accent1-50 p-5 shadow-sm hover:shadow-md transition-all"
+        >
+          <p className="font-semibold text-charcoal-900">
+            Complete your profile
+          </p>
+          <p className="text-sm text-charcoal-600 mt-1">
+            Fill out a quick questionnaire so our matchmakers can find your
+            perfect match.
+          </p>
+        </Link>
+      )}
 
       {isAdmin && (
         <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

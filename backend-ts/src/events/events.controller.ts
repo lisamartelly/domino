@@ -24,24 +24,26 @@ import type { AuthenticatedUser } from '../auth/decorators/current-user.decorato
 import { sendResult } from '../common/send-result';
 
 @Controller('events')
-@UseGuards(JwtAuthGuard)
 export class EventsController {
   constructor(private readonly service: EventsService) {}
 
-  // ── User-facing endpoints ──
+  // ── Public endpoints (no auth) ──
 
   @Get()
   async listPublished() {
     return this.service.listPublished();
   }
 
+  // Static paths MUST come before :id to avoid being swallowed by the param route
+
   @Get('my-registrations')
+  @UseGuards(JwtAuthGuard)
   async myRegistrations(@CurrentUser() user: AuthenticatedUser) {
     return this.service.getMyRegistrations(user.userId);
   }
 
   @Get('admin/all')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Admin', 'SuperDuperAdmin')
   async listAll() {
     return this.service.listAll();
@@ -56,9 +58,10 @@ export class EventsController {
     return sendResult(res, result);
   }
 
-  // ── Registration ──
+  // ── Registration (auth required) ──
 
   @Post(':id/register')
+  @UseGuards(JwtAuthGuard)
   async register(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: AuthenticatedUser,
@@ -69,6 +72,7 @@ export class EventsController {
   }
 
   @Delete(':id/register')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async cancelRegistration(
     @Param('id', ParseIntPipe) id: number,
@@ -82,7 +86,7 @@ export class EventsController {
   // ── Admin endpoints ──
 
   @Post()
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Admin', 'SuperDuperAdmin')
   async create(
     @Body() request: CreateEventRequest,
@@ -92,7 +96,7 @@ export class EventsController {
   }
 
   @Put(':id')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Admin', 'SuperDuperAdmin')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -104,7 +108,7 @@ export class EventsController {
   }
 
   @Patch(':id/publish')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Admin', 'SuperDuperAdmin')
   async publish(
     @Param('id', ParseIntPipe) id: number,
@@ -115,7 +119,7 @@ export class EventsController {
   }
 
   @Patch(':id/cancel')
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Admin', 'SuperDuperAdmin')
   async cancel(
     @Param('id', ParseIntPipe) id: number,

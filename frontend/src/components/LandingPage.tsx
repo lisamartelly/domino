@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { getEvents, type EventSummaryDto } from "../services/api";
 
 const HERO_IMAGES = [
   "/images/hero/premium_photo-1696972235468-3bfa7fa8bd9e.jpg",
@@ -11,8 +12,29 @@ const HERO_IMAGES = [
 
 const CYCLE_MS = 6000;
 
+function formatEventDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatEventTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function formatCost(cents: number): string {
+  if (cents === 0) return "Free";
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
 export function LandingPage() {
   const [current, setCurrent] = useState(0);
+  const [events, setEvents] = useState<EventSummaryDto[]>([]);
 
   useEffect(() => {
     const timer = setInterval(
@@ -20,6 +42,12 @@ export function LandingPage() {
       CYCLE_MS
     );
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    getEvents()
+      .then((data) => setEvents(data.slice(0, 3)))
+      .catch(() => {});
   }, []);
 
   return (
@@ -184,6 +212,69 @@ export function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Upcoming Events */}
+      {events.length > 0 && (
+        <section className="bg-cream-50 py-20 px-6">
+          <div className="max-w-5xl mx-auto">
+            <p className="text-primary-500 font-bold text-sm tracking-[0.2em] uppercase text-center mb-3">
+              Join us
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold text-charcoal-900 text-center mb-4">
+              Upcoming Events
+            </h2>
+            <p className="text-charcoal-500 text-center max-w-2xl mx-auto mb-14">
+              Meet people in person at our curated events.
+            </p>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {events.map((event) => (
+                <Link
+                  key={event.id}
+                  to={`/events/${event.id}`}
+                  className="rounded-2xl border border-charcoal-200 bg-white p-6 shadow-sm hover:shadow-md transition-all border-l-4 border-l-primary-400"
+                >
+                  <h3 className="text-lg font-bold text-charcoal-900 mb-2">
+                    {event.name}
+                  </h3>
+                  <p className="text-sm text-charcoal-500 line-clamp-2 mb-4">
+                    {event.description}
+                  </p>
+                  <div className="space-y-1 text-sm text-charcoal-600">
+                    <div>{formatEventDate(event.startTime)} &middot; {formatEventTime(event.startTime)}</div>
+                    <div>{event.location}</div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between">
+                    <span
+                      className={`font-semibold ${
+                        event.costCents === 0
+                          ? "text-accent2-600"
+                          : "text-charcoal-900"
+                      }`}
+                    >
+                      {formatCost(event.costCents)}
+                    </span>
+                    <span className="text-xs text-charcoal-400">
+                      {event.spotsRemaining !== null
+                        ? `${event.spotsRemaining} spots left`
+                        : "Open"}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <div className="text-center mt-10">
+              <Link
+                to="/events"
+                className="inline-block text-primary-600 hover:text-primary-700 font-semibold underline underline-offset-4"
+              >
+                View all events &rarr;
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="relative bg-primary-500 py-20 px-6 overflow-hidden">

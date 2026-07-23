@@ -1,0 +1,31 @@
+# Version control
+.git
+.gitignore
+
+# IDE and editor files
+.vscode
+.idea
+.cursor
+*.swp
+*.swo
+
+# CI/CD
+.github
+
+# Documentation
+*.md
+
+# Legacy .NET backend (not needed in the Docker build)
+backend/
+cdk.out/
+
+# Node artifacts (each stage installs its own)
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
