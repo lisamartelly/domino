@@ -507,3 +507,185 @@ export const submitSurveyResponse = async (
   }
   return response.json();
 };
+
+// ── Events ──
+
+export interface EventOccurrenceDto {
+  id: number;
+  startTime: string;
+  endTime: string;
+  isCancelled: boolean;
+}
+
+export interface EventDto {
+  id: number;
+  name: string;
+  description: string;
+  location: string;
+  costCents: number;
+  capacity: number | null;
+  startTime: string;
+  durationMinutes: number;
+  frequencyType: string;
+  frequencyCount: number;
+  status: string;
+  registrationCount: number;
+  occurrences: EventOccurrenceDto[];
+  createdAt: string;
+}
+
+export interface EventSummaryDto {
+  id: number;
+  name: string;
+  description: string;
+  location: string;
+  costCents: number;
+  capacity: number | null;
+  startTime: string;
+  durationMinutes: number;
+  frequencyType: string;
+  frequencyCount: number;
+  status: string;
+  registrationCount: number;
+  spotsRemaining: number | null;
+}
+
+export interface EventRegistrationDto {
+  id: number;
+  eventId: number;
+  eventName: string;
+  status: string;
+  pricePaidCents: number;
+  registeredAt: string;
+}
+
+export interface RegisterEventResponse {
+  registered: boolean;
+  checkoutUrl?: string;
+}
+
+export interface CreateEventRequest {
+  name: string;
+  description: string;
+  location: string;
+  costCents: number;
+  capacity?: number;
+  startTime: string;
+  durationMinutes: number;
+  frequencyType: string;
+  frequencyCount?: number;
+}
+
+export interface UpdateEventRequest {
+  name?: string;
+  description?: string;
+  location?: string;
+  costCents?: number;
+  capacity?: number | null;
+  startTime?: string;
+  durationMinutes?: number;
+  frequencyType?: string;
+  frequencyCount?: number;
+}
+
+export const getEvents = async (): Promise<EventSummaryDto[]> => {
+  const response = await fetchWithAuth("/api/events");
+  if (!response.ok) throw new Error("Failed to fetch events");
+  return response.json();
+};
+
+export const getAllEvents = async (): Promise<EventSummaryDto[]> => {
+  const response = await fetchWithAuth("/api/events/admin/all");
+  if (!response.ok) throw new Error("Failed to fetch events");
+  return response.json();
+};
+
+export const getEvent = async (id: number): Promise<EventDto> => {
+  const response = await fetchWithAuth(`/api/events/${id}`);
+  if (!response.ok) throw new Error("Failed to fetch event");
+  return response.json();
+};
+
+export const createEvent = async (
+  data: CreateEventRequest
+): Promise<EventDto> => {
+  const response = await fetchWithAuth("/api/events", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to create event");
+  }
+  return response.json();
+};
+
+export const updateEvent = async (
+  id: number,
+  data: UpdateEventRequest
+): Promise<EventDto> => {
+  const response = await fetchWithAuth(`/api/events/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to update event");
+  }
+  return response.json();
+};
+
+export const publishEvent = async (id: number): Promise<EventDto> => {
+  const response = await fetchWithAuth(`/api/events/${id}/publish`, {
+    method: "PATCH",
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to publish event");
+  }
+  return response.json();
+};
+
+export const cancelEvent = async (id: number): Promise<EventDto> => {
+  const response = await fetchWithAuth(`/api/events/${id}/cancel`, {
+    method: "PATCH",
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to cancel event");
+  }
+  return response.json();
+};
+
+export const registerForEvent = async (
+  eventId: number
+): Promise<RegisterEventResponse> => {
+  const response = await fetchWithAuth(`/api/events/${eventId}/register`, {
+    method: "POST",
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to register for event");
+  }
+  return response.json();
+};
+
+export const cancelEventRegistration = async (
+  eventId: number
+): Promise<void> => {
+  const response = await fetchWithAuth(`/api/events/${eventId}/register`, {
+    method: "DELETE",
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to cancel registration");
+  }
+};
+
+export const getMyEventRegistrations = async (): Promise<
+  EventRegistrationDto[]
+> => {
+  const response = await fetchWithAuth("/api/events/my-registrations");
+  if (!response.ok) throw new Error("Failed to fetch registrations");
+  return response.json();
+};

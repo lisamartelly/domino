@@ -4,7 +4,9 @@ import { useAuth } from "../../contexts/AuthContext";
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", adminOnly: false },
+  { to: "/events", label: "Events", adminOnly: false },
   { to: "/match", label: "Matching", adminOnly: true },
+  { to: "/events/manage", label: "Manage Events", adminOnly: true },
   { to: "/activity-ideas", label: "Activity Ideas", adminOnly: true },
 ];
 

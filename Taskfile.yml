@@ -1,8 +1,5 @@
 version: "3"
 
-vars:
-  DOTNET_ENVIRONMENT: Development
-
 tasks:
   # ----------------------------------
   # Start PostgreSQL dev database
@@ -13,58 +10,46 @@ tasks:
       - docker compose up -d
 
   # ----------------------------------
-  # Run .NET backend
+  # Run NestJS backend
   # ----------------------------------
   api:
-    desc: "Run .NET backend"
-    dir: backend/src/Domino.Backend
+    desc: "Run NestJS backend"
+    dir: backend-ts
     ignore_error: true
     cmds:
-      - task: api-restore
+      - npm install
       - |
         if [ "${WATCH}" = "true" ]; then
-          echo "Starting .NET backend in WATCH mode..."
-          DOTNET_ENVIRONMENT={{.DOTNET_ENVIRONMENT}} dotnet watch run
+          echo "Starting NestJS backend in WATCH mode..."
+          npm run start:dev
         else
-          echo "Starting .NET backend..."
-          DOTNET_ENVIRONMENT={{.DOTNET_ENVIRONMENT}} dotnet run
+          echo "Starting NestJS backend..."
+          npm run start
         fi
 
-  api-restore:
-    desc: "Restore .NET dependencies"
-    dir: backend/src/Domino.Backend
-    cmds:
-      - dotnet restore
-
   # ----------------------------------
-  # Run .NET backend tests
+  # Run backend tests
   # ----------------------------------
   api-test:
-    desc: "Run .NET backend tests"
-    dir: backend
+    desc: "Run NestJS backend tests"
+    dir: backend-ts
     cmds:
-      - dotnet test
+      - npm test
 
   api-test-watch:
-    desc: "Run .NET backend tests in watch mode"
-    dir: backend
+    desc: "Run NestJS backend tests in watch mode"
+    dir: backend-ts
     cmds:
-      - dotnet watch test
+      - npm run test:watch
 
   # ----------------------------------
-  # Lint .NET backend
+  # Lint backend
   # ----------------------------------
   api-lint:
-    desc: "Check .NET code for lint errors"
-    dir: backend
+    desc: "Check NestJS code for lint errors"
+    dir: backend-ts
     cmds:
-      - dotnet format --verify-no-changes --verbosity diagnostic
-
-  api-lint-fix:
-    desc: "Auto-fix .NET lint errors"
-    dir: backend
-    cmds:
-      - dotnet format
+      - npm run lint
 
   # ----------------------------------
   # Run React frontend
@@ -74,9 +59,8 @@ tasks:
     dir: frontend
     ignore_error: true
     cmds:
-      - source ~/.nvm/nvm.sh && nvm use && npm install
+      - npm install
       - |
-        source ~/.nvm/nvm.sh && nvm use
         if [ "${WATCH}" = "true" ]; then
           echo "Starting React frontend in WATCH mode..."
           npm run dev
@@ -92,13 +76,13 @@ tasks:
     desc: "Run React frontend tests"
     dir: frontend
     cmds:
-      - source ~/.nvm/nvm.sh && nvm use && npm run test:run
+      - npm run test:run
 
   client-test-watch:
     desc: "Run React frontend tests in watch mode"
     dir: frontend
     cmds:
-      - source ~/.nvm/nvm.sh && nvm use && npm test
+      - npm test
 
   # ----------------------------------
   # Test all projects
@@ -116,13 +100,13 @@ tasks:
     desc: "Check React code for lint errors"
     dir: frontend
     cmds:
-      - source ~/.nvm/nvm.sh && nvm use && npm run lint
+      - npm run lint
 
   client-lint-fix:
     desc: "Auto-fix React lint errors"
     dir: frontend
     cmds:
-      - source ~/.nvm/nvm.sh && nvm use && npm run lint:fix
+      - npm run lint:fix
 
   # ----------------------------------
   # Lint all projects
@@ -136,7 +120,7 @@ tasks:
   lint-fix:
     desc: "Auto-fix lint errors in backend and frontend"
     cmds:
-      - task: api-lint-fix
+      - task: api-lint
       - task: client-lint-fix
 
   # ----------------------------------
@@ -146,7 +130,7 @@ tasks:
     desc: "Tail PostgreSQL container logs"
     ignore_error: true
     cmds:
-      - docker logs -f dev-postgres
+      - docker logs -f domino-db-1
 
   # ----------------------------------
   # Full dev environment

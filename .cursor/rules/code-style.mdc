@@ -1,0 +1,56 @@
+---
+description: Code style and formatting standards
+globs: backend-ts/**/*.ts,frontend/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Code Style
+
+## Formatting (enforced by Prettier)
+
+- Single quotes
+- Trailing commas
+- Auto line endings
+
+## TypeScript
+
+- Prefer `interface` over `type` for object shapes
+- Use `readonly` for properties that shouldn't change
+- No `any` — use `unknown` and narrow, or define proper types
+- Use `const` by default, `let` only when reassignment is needed
+
+## Async/Await
+
+```typescript
+// ✅ Always use async/await
+const user = await this.prisma.user.findUnique({ where: { id } });
+
+// ❌ Don't use raw promises with .then()
+this.prisma.user.findUnique({ where: { id } }).then(user => ...);
+```
+
+## Imports
+
+- Use absolute imports within the NestJS project (relative from `src/`)
+- Group imports: external packages → internal modules → relative files
+- No unused imports (enforced by ESLint)
+
+## `isolatedModules` Rules
+
+The tsconfig has `isolatedModules: true`. This means:
+
+```typescript
+// ✅ Use `import type` for types used in decorated parameters
+import { CurrentUser } from './decorators/current-user.decorator';
+import type { AuthenticatedUser } from './decorators/current-user.decorator';
+
+// ✅ Use `export type` when re-exporting interfaces/types
+export type { UserDto, LoginResponse } from './auth-response.dto';
+
+// ✅ Use `import type` for Express Request/Response in controllers
+import type { Request, Response } from 'express';
+
+// ❌ These will cause TS1272 / TS1205 errors
+import { AuthenticatedUser } from './decorators/current-user.decorator';
+export { UserDto } from './auth-response.dto';
+```

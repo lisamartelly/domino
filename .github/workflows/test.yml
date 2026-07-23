@@ -14,18 +14,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          dotnet-version: "10.0.x"
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: backend-ts/package-lock.json
 
-      - name: Restore dependencies
-        working-directory: backend
-        run: dotnet restore
+      - name: Install dependencies
+        working-directory: backend-ts
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: backend-ts
+        run: npx prisma generate
 
       - name: Run tests
-        working-directory: backend
-        run: dotnet test --no-restore --verbosity normal
+        working-directory: backend-ts
+        run: npm test
 
   frontend-tests:
     name: Frontend Tests
