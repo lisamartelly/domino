@@ -18,21 +18,21 @@ import { ActivityIdeasPage } from "./components/ActivityIdeasPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MatchFlowProvider } from "./contexts/MatchFlowContext";
 import { AppLayout } from "./components/layout/AppLayout";
+import { PublicLayout } from "./components/layout/PublicLayout";
 import { EventsPage } from "./components/events/EventsPage";
 import { EventDetailPage } from "./components/events/EventDetailPage";
 import { EventManagePage } from "./components/events/EventManagePage";
 import { PaymentSuccessPage } from "./components/events/PaymentSuccessPage";
 import { PaymentCancelPage } from "./components/events/PaymentCancelPage";
-import {
-  buildReturnUrlParam,
-  resolveAfterIntakeComplete,
-  resolvePostLoginTarget,
-} from "./utils/returnUrl";
+import { resolveAfterIntakeComplete } from "./utils/returnUrl";
 
 function PostAuthRedirect() {
-  const { hasCompletedIntake } = useAuth();
   const location = useLocation();
-  const to = resolvePostLoginTarget(location.search, hasCompletedIntake);
+  const params = new URLSearchParams(location.search);
+  const returnUrl = params.get("returnUrl");
+  const safe = returnUrl ? decodeURIComponent(returnUrl) : null;
+  const to =
+    safe && safe.startsWith("/") && !safe.startsWith("//") ? safe : "/dashboard";
   return <Navigate to={to} replace />;
 }
 
@@ -43,21 +43,7 @@ function AppRoutes() {
   /** Tracks auth after initial check so we only send users home on logout, not on cold deep-links while logged out. */
   const authAfterLoad = useRef<boolean | null>(null);
 
-  const publicPaths = ["/", "/login"];
-
-  // Redirect to intake if authenticated but hasn't completed it
-  useEffect(() => {
-    if (
-      !isLoading &&
-      isAuthenticated &&
-      !hasCompletedIntake &&
-      location.pathname !== "/intake" &&
-      !publicPaths.includes(location.pathname)
-    ) {
-      const pending = buildReturnUrlParam(location.pathname, location.search);
-      navigate(`/intake?returnUrl=${pending}`, { replace: true });
-    }
-  }, [isAuthenticated, hasCompletedIntake, isLoading, location.pathname, location.search, navigate]);
+  const publicPaths = ["/", "/login", "/events"];
 
   // Redirect away from intake once completed
   useEffect(() => {
@@ -83,10 +69,14 @@ function AppRoutes() {
     if (isLoading) return;
 
     const wasAuthenticated = authAfterLoad.current;
+    const isPublicPath =
+      publicPaths.includes(location.pathname) ||
+      location.pathname.startsWith("/events/") &&
+        !location.pathname.startsWith("/events/manage");
     if (
       wasAuthenticated === true &&
       !isAuthenticated &&
-      !publicPaths.includes(location.pathname)
+      !isPublicPath
     ) {
       navigate("/", { replace: true });
     }
@@ -168,11 +158,9 @@ function AppRoutes() {
       <Route
         path="/events"
         element={
-          <ProtectedRoute>
-            <AppLayout>
-              <EventsPage />
-            </AppLayout>
-          </ProtectedRoute>
+          <PublicLayout>
+            <EventsPage />
+          </PublicLayout>
         }
       />
       <Route
@@ -208,11 +196,9 @@ function AppRoutes() {
       <Route
         path="/events/:id"
         element={
-          <ProtectedRoute>
-            <AppLayout>
-              <EventDetailPage />
-            </AppLayout>
-          </ProtectedRoute>
+          <PublicLayout>
+            <EventDetailPage />
+          </PublicLayout>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
