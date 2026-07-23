@@ -16,9 +16,12 @@ describe("api service", () => {
     const mockRequest: RegisterRequest = {
       email: "test@example.com",
       password: "password123",
-      firstName: "John",
-      lastName: "Doe",
+      name: "John Doe",
+      pronouns: "he/him",
       birthday: "1990-01-01",
+      phone: "555-123-4567",
+      interests: "hiking, reading",
+      lookingFor: ["closeFriends", "community"],
     };
 
     it("sends POST request with correct data", async () => {
@@ -110,9 +113,12 @@ describe("api service", () => {
       expect(requestBody).toEqual({
         email: "test@example.com",
         password: "password123",
-        firstName: "John",
-        lastName: "Doe",
+        name: "John Doe",
+        pronouns: "he/him",
         birthday: "1990-01-01",
+        phone: "555-123-4567",
+        interests: "hiking, reading",
+        lookingFor: ["closeFriends", "community"],
       });
     });
 

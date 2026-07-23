@@ -24,8 +24,7 @@ describe('JwtService', () => {
   const testUser = {
     id: 1,
     email: 'test@example.com',
-    firstName: 'Test',
-    lastName: 'User',
+    name: 'Test',
     roles: ['User'],
   };
 

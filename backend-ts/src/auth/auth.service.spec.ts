@@ -48,9 +48,12 @@ describe('AuthService', () => {
     const registerRequest = {
       email: 'new@example.com',
       password: 'Password123!',
-      firstName: 'New',
-      lastName: 'User',
+      name: 'New User',
+      pronouns: 'they/them',
       birthday: '1990-01-15',
+      phone: '555-123-4567',
+      interests: 'hiking, reading',
+      lookingFor: ['closeFriends', 'community'],
     };
 
     it('should register a new user successfully', async () => {
@@ -58,8 +61,8 @@ describe('AuthService', () => {
       (prisma.user.create as jest.Mock).mockResolvedValue({
         id: 1,
         email: 'new@example.com',
-        firstName: 'New',
-        lastName: 'User',
+        firstName: 'New User',
+        pronouns: 'they/them',
       });
       (prisma.role.findFirst as jest.Mock).mockResolvedValue({
         id: 3,
@@ -73,6 +76,8 @@ describe('AuthService', () => {
       expect(result.response.message).toBe('Registration successful');
       expect(result.response.accessToken).toBe('mock-access-token');
       expect(result.response.user?.email).toBe('new@example.com');
+      expect(result.response.user?.name).toBe('New User');
+      expect(result.response.user?.pronouns).toBe('they/them');
       expect(result.response.user?.roles).toEqual(['User']);
       expect(result.response.user?.hasCompletedIntake).toBe(false);
       expect(result.refreshCookieValue).toContain('mock-refresh-token');
@@ -100,7 +105,7 @@ describe('AuthService', () => {
           id: 1,
           email: data.email,
           firstName: data.firstName,
-          lastName: data.lastName,
+          pronouns: data.pronouns,
         });
       });
       (prisma.role.findFirst as jest.Mock).mockResolvedValue({
@@ -122,7 +127,7 @@ describe('AuthService', () => {
       id: 1,
       email: 'test@example.com',
       firstName: 'Test',
-      lastName: 'User',
+      pronouns: 'he/him',
       isActive: true,
       passwordHash: hashedPassword,
       lockoutEnabled: true,
@@ -271,7 +276,7 @@ describe('AuthService', () => {
         id: 1,
         email: 'test@example.com',
         firstName: 'Test',
-        lastName: 'User',
+        pronouns: 'he/him',
         isActive: true,
       });
       (prisma.userRole.findMany as jest.Mock).mockResolvedValue([
@@ -284,8 +289,8 @@ describe('AuthService', () => {
       expect(result).toEqual({
         id: 1,
         email: 'test@example.com',
-        firstName: 'Test',
-        lastName: 'User',
+        name: 'Test',
+        pronouns: 'he/him',
         roles: ['User'],
         hasCompletedIntake: false,
       });
