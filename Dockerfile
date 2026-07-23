@@ -14,14 +14,9 @@ FROM node:24-alpine AS backend-build
 
 WORKDIR /app/backend
 
-COPY backend-ts/package*.json ./
-COPY backend-ts/prisma.config.ts ./
-COPY backend-ts/prisma/ ./prisma/
-
+COPY backend-ts/ .
 RUN npm ci
 RUN npx prisma generate
-
-COPY backend-ts/ .
 RUN npm run build
 
 # Stage 3: Production runtime
@@ -29,8 +24,13 @@ FROM node:24-alpine AS runtime
 
 WORKDIR /app
 
+# Copy compiled backend
 COPY --from=backend-build /app/backend/dist ./dist
-COPY --from=backend-build /app/backend/src/generated ./src/generated
+
+# Overlay Prisma-generated source files so .ts references resolve at runtime
+# (Node 24 handles .ts requires via built-in type stripping)
+COPY --from=backend-build /app/backend/src/generated/ ./dist/src/generated/
+
 COPY --from=backend-build /app/backend/node_modules ./node_modules
 COPY --from=backend-build /app/backend/package.json ./
 
