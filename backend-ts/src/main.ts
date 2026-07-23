@@ -30,7 +30,7 @@ async function bootstrap() {
 
   // In production, serve the frontend static build
   if (process.env.NODE_ENV === 'production') {
-    const clientPath = join(__dirname, '..', 'public');
+    const clientPath = join(__dirname, '..', '..', 'public');
     app.useStaticAssets(clientPath);
 
     // SPA fallback: serve index.html for any non-API route
