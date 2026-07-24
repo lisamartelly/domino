@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 
 const HERO_IMAGES = [
   "/images/hero/premium_photo-1696972235468-3bfa7fa8bd9e.jpg",

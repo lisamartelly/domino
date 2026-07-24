@@ -12,11 +12,9 @@ Full-stack social matching app: React frontend + NestJS/TypeScript backend + Pos
 - **Frontend:** `frontend/` — React 19, TypeScript, Vite, Tailwind CSS (port 5173)
 - **Backend:** `backend-ts/` — NestJS, Prisma 7, PostgreSQL (port 5297)
 - **Database:** PostgreSQL 18 via Docker (port 5433)
-- **Legacy:** `backend/` — original .NET backend, kept for reference only. Do NOT modify.
-
 ## API Contract
 
-All backend endpoints use the `/api` prefix. The frontend expects the exact same request/response shapes as the original .NET backend. Do not change API contracts without explicit approval.
+All backend endpoints use the `/api` prefix. Do not change API contracts without explicit approval.
 
 Key response patterns to preserve:
 - Auth endpoints return `{ success, message, accessToken?, user? }` envelopes

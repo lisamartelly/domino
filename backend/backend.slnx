@@ -1,8 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/Domino.Backend/Domino.Backend.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Domino.Backend.Tests/Domino.Backend.Tests.csproj" />
-  </Folder>
-</Solution>
