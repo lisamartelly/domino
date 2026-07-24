@@ -15,6 +15,7 @@ import { Dashboard } from "./components/Dashboard";
 import { MatchSection } from "./components/matching/MatchSection";
 import { MatchViewPage } from "./components/matching/MatchViewPage";
 import { ActivityIdeasPage } from "./components/ActivityIdeasPage";
+import { NewsletterSubscribersPage } from "./components/NewsletterSubscribersPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { MatchFlowProvider } from "./contexts/MatchFlowContext";
 import { AppLayout } from "./components/layout/AppLayout";
@@ -151,6 +152,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <AppLayout>
               <ActivityIdeasPage />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/newsletter"
+        element={
+          <ProtectedRoute>
+            <AppLayout>
+              <NewsletterSubscribersPage />
             </AppLayout>
           </ProtectedRoute>
         }

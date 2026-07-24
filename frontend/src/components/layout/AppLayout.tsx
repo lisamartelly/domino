@@ -8,6 +8,7 @@ const navItems = [
   { to: "/match", label: "Matching", adminOnly: true },
   { to: "/events/manage", label: "Manage Events", adminOnly: true },
   { to: "/activity-ideas", label: "Activity Ideas", adminOnly: true },
+  { to: "/newsletter", label: "Newsletter", adminOnly: true },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {

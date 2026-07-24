@@ -692,3 +692,35 @@ export const getMyEventRegistrations = async (): Promise<
   if (!response.ok) throw new Error("Failed to fetch registrations");
   return response.json();
 };
+
+// ── Newsletter ──
+
+export interface SubscribeResponse {
+  subscribed: boolean;
+}
+
+export const subscribeToNewsletter = async (
+  email: string
+): Promise<SubscribeResponse> => {
+  const response = await fetch("/api/newsletter/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!response.ok) throw new Error("Failed to subscribe");
+  return response.json();
+};
+
+export interface NewsletterSubscriberDto {
+  id: number;
+  email: string;
+  subscribedAt: string;
+}
+
+export const getNewsletterSubscribers = async (): Promise<
+  NewsletterSubscriberDto[]
+> => {
+  const response = await fetchWithAuth("/api/newsletter/subscribers");
+  if (!response.ok) throw new Error("Failed to fetch subscribers");
+  return response.json();
+};
