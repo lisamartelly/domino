@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { subscribeToNewsletter } from "../services/api";
 
 const HERO_IMAGES = [
   "/images/hero/premium_photo-1696972235468-3bfa7fa8bd9e.jpg",
@@ -18,6 +19,8 @@ export function LandingPage() {
   const [current, setCurrent] = useState(0);
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -28,11 +31,20 @@ export function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
-  function handleNewsletterSubmit(e: React.FormEvent) {
+  async function handleNewsletterSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (email.trim()) {
+    if (!email.trim()) return;
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      await subscribeToNewsletter(email);
       setSubmitted(true);
       setEmail("");
+    } catch {
+      setError("Something went wrong — please try again.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -187,26 +199,33 @@ export function LandingPage() {
               </p>
             </div>
           ) : (
-            <form
-              ref={formRef}
-              onSubmit={handleNewsletterSubmit}
-              className="flex flex-col sm:flex-row gap-3 mb-8"
-            >
-              <input
-                type="email"
-                required
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 rounded-lg border border-charcoal-200 px-4 py-3.5 text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-cream-50"
-              />
-              <button
-                type="submit"
-                className="bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3.5 px-8 rounded-lg transition-colors shadow-md hover:shadow-lg whitespace-nowrap"
+            <>
+              <form
+                ref={formRef}
+                onSubmit={handleNewsletterSubmit}
+                className="flex flex-col sm:flex-row gap-3 mb-8"
               >
-                Newsletter Sign Up
-              </button>
-            </form>
+                <input
+                  type="email"
+                  required
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={submitting}
+                  className="flex-1 rounded-lg border border-charcoal-200 px-4 py-3.5 text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent bg-cream-50 disabled:opacity-60"
+                />
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3.5 px-8 rounded-lg transition-colors shadow-md hover:shadow-lg whitespace-nowrap disabled:opacity-60"
+                >
+                  {submitting ? "Signing up…" : "Newsletter Sign Up"}
+                </button>
+              </form>
+              {error && (
+                <p className="text-red-600 text-sm -mt-5 mb-4">{error}</p>
+              )}
+            </>
           )}
 
         </div>

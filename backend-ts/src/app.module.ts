@@ -9,6 +9,7 @@ import { SurveysModule } from './surveys/surveys.module';
 import { MatchesModule } from './matches/matches.module';
 import { StripeModule } from './stripe/stripe.module';
 import { EventsModule } from './events/events.module';
+import { NewsletterModule } from './newsletter/newsletter.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { EventsModule } from './events/events.module';
     SurveysModule,
     MatchesModule,
     EventsModule,
+    NewsletterModule,
   ],
 })
 export class AppModule {}
