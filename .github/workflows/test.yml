@@ -55,3 +55,31 @@ jobs:
       - name: Run tests
         working-directory: frontend
         run: npm run test:run
+
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: backend-ts/package-lock.json
+
+      - name: Install & build backend
+        working-directory: backend-ts
+        run: |
+          npm ci
+          npx prisma generate
+          npm run build
+
+      - name: Install & build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
