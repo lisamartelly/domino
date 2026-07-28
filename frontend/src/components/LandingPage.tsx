@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { subscribeToNewsletter } from "../services/api";
 
 const HERO_IMAGES = [
-  "/images/hero/premium_photo-1696972235468-3bfa7fa8bd9e.jpg",
-  "/images/hero/premium_photo-1762541155847-1a9759cb06b6.jpg",
-  "/images/hero/premium_photo-1762644219831-f779400dc779 (1).jpg",
-  "/images/hero/premium_photo-1697565995290-2b6f5dca294f.jpg",
-  "/images/hero/premium_photo-1762541086016-11302dd8a73a.jpg",
+  { src: "/images/hero/hero-group.jpg", position: "center 60%" },
+  { src: "/images/hero/other-plant-boys.jpg", position: "center 40%" },
+  { src: "/images/hero/crafty.jpg", position: "center" },
+  { src: "/images/hero/book-club.jpg", position: "center" },
+  { src: "/images/hero/card-game.jpg", position: "center" },
+  { src: "/images/hero/catan.jpg", position: "center 30%" },
+  { src: "/images/hero/hikers.jpg", position: "center 60%" },
 ];
 
 const CYCLE_MS = 6000;
@@ -51,13 +53,14 @@ export function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-cream-50">
       {/* ── Hero ── */}
-      <section className="relative min-h-[100vh] flex items-center justify-center overflow-hidden">
-        {HERO_IMAGES.map((src, i) => (
+      <section className="relative min-h-[75vh] md:min-h-[100vh] flex items-center justify-center overflow-hidden">
+        {HERO_IMAGES.map((img, i) => (
           <div
-            key={src}
-            className="absolute inset-0 bg-cover bg-center transition-opacity duration-[1500ms] ease-in-out"
+            key={img.src}
+            className="absolute inset-0 bg-cover transition-opacity duration-[1500ms] ease-in-out grayscale"
             style={{
-              backgroundImage: `url('${src}')`,
+              backgroundImage: `url('${img.src}')`,
+              backgroundPosition: img.position,
               opacity: i === current ? 1 : 0,
             }}
           />
@@ -70,28 +73,30 @@ export function LandingPage() {
             alt="Domino Social Club"
             className="h-56 md:h-80 mx-auto mb-8"
           />
-          <p className="text-cream-100 text-base md:text-lg leading-relaxed max-w-lg mx-auto mb-12">
-            Real connections, curated with care. We learn who you are, then
-            hand-pick someone worth meeting.
+          <p className="text-cream-50 text-xl md:text-2xl font-semibold leading-snug max-w-lg mx-auto mb-4">
+            Where people meet their people
+          </p>
+          <p className="text-cream-100 text-sm md:text-lg leading-relaxed max-w-lg mx-auto mb-12 whitespace-nowrap">
+            Serving the good folks of Minneapolis and Saint Paul
           </p>
 
           {/* Nav buttons */}
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 w-full max-w-xs sm:max-w-none mx-auto">
             <button
               onClick={() => scrollTo("about")}
-              className="bg-white/10 hover:bg-white/20 backdrop-blur text-cream-50 font-semibold py-3 px-8 rounded-lg transition-colors border border-cream-50/25 text-sm tracking-wide uppercase"
+              className="bg-white/10 hover:bg-white/20 backdrop-blur text-cream-50 font-semibold py-3 px-8 rounded-lg transition-colors border border-cream-50/25 text-sm tracking-wide uppercase w-full sm:w-auto"
             >
               About
             </button>
             <button
               onClick={() => scrollTo("join")}
-              className="bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-sm tracking-wide uppercase"
+              className="bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-sm tracking-wide uppercase w-full sm:w-auto"
             >
               Join the Club
             </button>
             <button
               onClick={() => scrollTo("contact")}
-              className="bg-white/10 hover:bg-white/20 backdrop-blur text-cream-50 font-semibold py-3 px-8 rounded-lg transition-colors border border-cream-50/25 text-sm tracking-wide uppercase"
+              className="bg-white/10 hover:bg-white/20 backdrop-blur text-cream-50 font-semibold py-3 px-8 rounded-lg transition-colors border border-cream-50/25 text-sm tracking-wide uppercase w-full sm:w-auto"
             >
               Contact Us
             </button>
@@ -122,53 +127,80 @@ export function LandingPage() {
       {/* ── About ── */}
       <section id="about" className="bg-cream-50 py-20 md:py-28 px-6">
         <div className="max-w-5xl mx-auto">
-          <p className="text-primary-500 font-bold text-xs tracking-[0.25em] uppercase text-center mb-3">
-            Who we are
-          </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-charcoal-900 text-center mb-16">
-            About
-          </h2>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-charcoal-900 tracking-wide uppercase">
+              About Domino
+            </h2>
+            <span className="block mt-3 mx-auto h-1 w-16 rounded-full bg-primary-500" />
+          </div>
 
-          <div className="flex flex-col md:flex-row gap-12 md:gap-16 items-center">
-            {/* Image */}
-            <div className="w-full md:w-5/12 flex-shrink-0">
-              <div className="relative rounded-2xl overflow-hidden shadow-xl aspect-[4/5]">
-                <img
-                  src={HERO_IMAGES[1]}
-                  alt="People connecting"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/30 to-transparent" />
-              </div>
-            </div>
-
-            {/* Three pillars */}
-            <div className="flex-1 space-y-10">
-              {[
-                {
-                  label: "Mission",
-                  text: "We believe the best connections start with intention, not algorithms. Domino Social Club pairs real people through thoughtful, human matchmaking — one meaningful introduction at a time.",
-                },
-                {
-                  label: "Events",
-                  text: "From wine nights to coffee walks, our curated events give you a relaxed way to meet new people in person — no pressure, just good company.",
-                },
-                {
-                  label: "Matchmaking",
-                  text: "Our team reads every profile and hand-picks someone we genuinely think you'll connect with, along with a personal note on why we think you'd hit it off.",
-                },
-              ].map((item) => (
-                <div key={item.label}>
-                  <h3 className="text-lg font-bold text-charcoal-900 mb-2 flex items-center gap-3">
-                    <span className="w-8 h-0.5 bg-primary-400 inline-block rounded" />
-                    {item.label}
-                  </h3>
-                  <p className="text-charcoal-500 leading-relaxed pl-11">
-                    {item.text}
-                  </p>
+          <div className="space-y-16 md:space-y-24">
+            {[
+              {
+                label: "Mission",
+                image: "/images/about/happy-girls.jpg",
+                imageAlt: "Happy friends together",
+                paragraphs: [
+                  "Domino is here to help people find their people. Whether you're looking for meaningful friendships, romantic partnership, or a stronger sense of community, we're here to make connecting a little easier.",
+                  "We know making the right connections can be hard, so we're here to help. Tell us who you are, what you're looking for, and what matters to you, and let us take it from there.",
+                ],
+              },
+              {
+                label: "Events",
+                image: "/images/about/plant-boys.jpg",
+                imageAlt: "Friends with plants",
+                paragraphs: [
+                  "We LOVE sending an invite, breaking the ice, and bringing the right people together.",
+                  "The best connections happen when we have something in common and opportunities to see each other more than once. That's why we create events centered around shared interests, welcoming environments, and genuine conversation. No more awkward mixers or endless swiping.",
+                  "Creating the ideal environment for connections to flourish is our bread and butter. Whether it's a creative class, game night, outdoor adventure, volunteer event, or something entirely new, our events are designed to take the pressure off and make meeting people feel easy.",
+                ],
+              },
+              {
+                label: "Matchmaking",
+                image: "/images/about/sparklers.jpg",
+                imageAlt: "Sparklers celebration",
+                paragraphs: [
+                  "Sometimes the right introduction just needs a little help.",
+                  "At Domino, matchmaking goes beyond our events. We take the time to get to know our members and make thoughtful introductions for both friendship and romance. Whether you're hoping to expand your social circle, you're tired of dating apps, or you're looking for something more intentional, we're here to help.",
+                  "Looking for friends who share your interests and values? Looking for love or a partner for the long haul? We'll keep an eye out for someone we think you'll genuinely connect with, and when we see a promising match, we'll reach out and make the introduction.",
+                  "Met someone at a Domino event and wish you'd gotten their number? We've got you. If the interest is mutual, we'll help make the connection. Whether it's a new friendship or the start of something more, we're here to help great conversations turn into lasting relationships.",
+                ],
+              },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex flex-col md:flex-row gap-10 md:gap-14 items-center"
+              >
+                <div className="w-full md:w-4/12 flex-shrink-0 px-4 md:px-6">
+                  <div className="relative rounded-2xl overflow-hidden shadow-xl aspect-[4/5]">
+                    <img
+                      src={item.image}
+                      alt={item.imageAlt}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal-950/30 to-transparent" />
+                  </div>
                 </div>
-              ))}
-            </div>
+                <div className="flex-1">
+                  <h3 className="mb-4">
+                    <span className="text-2xl md:text-3xl font-bold text-charcoal-900 tracking-wide uppercase">
+                      {item.label}
+                    </span>
+                    <span className="block mt-2 h-1 w-12 rounded-full bg-accent1-500" />
+                  </h3>
+                  <div className="space-y-3">
+                    {item.paragraphs.map((paragraph, i) => (
+                      <p
+                        key={i}
+                        className="text-charcoal-500 leading-relaxed"
+                      >
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -179,15 +211,36 @@ export function LandingPage() {
       {/* ── Join the Club ── */}
       <section id="join" className="bg-white py-20 md:py-28 px-6">
         <div className="max-w-xl mx-auto text-center">
-          <p className="text-primary-500 font-bold text-xs tracking-[0.25em] uppercase mb-3">
-            Get started
+          <div className="mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold text-charcoal-900 tracking-wide uppercase">
+              Join the Club
+            </h2>
+            <span className="block mt-3 mx-auto h-1 w-16 rounded-full bg-primary-500" />
+          </div>
+          <p className="text-charcoal-500 leading-relaxed mb-4">
+            Be the first to hear about upcoming events, new experiences, and
+            opportunities to meet incredible people right here in the Twin Cities.
           </p>
-          <h2 className="text-3xl md:text-4xl font-bold text-charcoal-900 mb-4">
-            Join the Club
-          </h2>
           <p className="text-charcoal-500 leading-relaxed mb-10">
-            Sign up for our newsletter to stay in the loop, or create an account
-            to start your matchmaking journey.
+            Join our newsletter and follow us on{" "}
+            <a
+              href="https://instagram.com/dominosocial.club"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary-600 hover:text-primary-700 font-medium underline underline-offset-2"
+            >
+              Instagram
+            </a>{" "}
+            and{" "}
+            <a
+              href="https://tiktok.com/@dominosocialclub"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary-600 hover:text-primary-700 font-medium underline underline-offset-2"
+            >
+              TikTok
+            </a>{" "}
+            to stay in the loop.
           </p>
 
           {/* Newsletter signup */}
@@ -243,7 +296,7 @@ export function LandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-8 mb-12">
             <a
-              href="https://instagram.com/dominosocialclub"
+              href="https://instagram.com/dominosocial.club"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 text-charcoal-300 hover:text-cream-50 transition-colors"
@@ -251,17 +304,29 @@ export function LandingPage() {
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
               </svg>
+              <span>@dominosocial.club</span>
+            </a>
+
+            <a
+              href="https://tiktok.com/@dominosocialclub"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-charcoal-300 hover:text-cream-50 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z" />
+              </svg>
               <span>@dominosocialclub</span>
             </a>
 
             <a
-              href="mailto:hello@dominosocialclub.com"
+              href="mailto:hello@dominosocial.club"
               className="flex items-center gap-2 text-charcoal-300 hover:text-cream-50 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
               </svg>
-              <span>hello@dominosocialclub.com</span>
+              <span>hello@dominosocial.club</span>
             </a>
           </div>
 
