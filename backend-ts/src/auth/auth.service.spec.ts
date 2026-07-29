@@ -1,4 +1,5 @@
 import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { JwtService } from './jwt.service';
 import { RefreshTokenService } from './refresh-token.service';
@@ -9,6 +10,7 @@ describe('AuthService', () => {
   let prisma: jest.Mocked<PrismaService>;
   let jwtService: jest.Mocked<JwtService>;
   let refreshTokenService: jest.Mocked<RefreshTokenService>;
+  let configService: jest.Mocked<ConfigService>;
 
   beforeEach(() => {
     prisma = {
@@ -41,7 +43,16 @@ describe('AuthService', () => {
       revokeRefreshToken: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<RefreshTokenService>;
 
-    authService = new AuthService(prisma, jwtService, refreshTokenService);
+    configService = {
+      get: jest.fn().mockReturnValue(undefined),
+    } as unknown as jest.Mocked<ConfigService>;
+
+    authService = new AuthService(
+      prisma,
+      jwtService,
+      refreshTokenService,
+      configService,
+    );
   });
 
   describe('register', () => {
@@ -94,6 +105,19 @@ describe('AuthService', () => {
       expect(result.response.success).toBe(false);
       expect(result.response.message).toBe('Registration failed');
       expect(result.refreshCookieValue).toBe('');
+    });
+
+    it('should reject registration when REGISTRATION_ENABLED is false', async () => {
+      configService.get.mockReturnValue('false');
+
+      const result = await authService.register(registerRequest);
+
+      expect(result.response.success).toBe(false);
+      expect(result.response.message).toBe(
+        'Registration is currently closed',
+      );
+      expect(prisma.user.findFirst).not.toHaveBeenCalled();
+      expect(prisma.user.create).not.toHaveBeenCalled();
     });
 
     it('should hash the password before storing', async () => {
@@ -248,6 +272,121 @@ describe('AuthService', () => {
         where: { id: 1 },
         data: { accessFailedCount: 0, lockoutEnd: null },
       });
+    });
+  });
+
+  describe('logout', () => {
+    it('should revoke refresh token for valid cookie', async () => {
+      const user = { id: 1, email: 'test@example.com' };
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(user);
+
+      await authService.logout('1:some-refresh-token');
+
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
+      expect(refreshTokenService.revokeRefreshToken).toHaveBeenCalledWith(user);
+    });
+
+    it('should do nothing when cookie is undefined', async () => {
+      await authService.logout(undefined);
+
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+      expect(refreshTokenService.revokeRefreshToken).not.toHaveBeenCalled();
+    });
+
+    it('should do nothing for malformed cookie without separator', async () => {
+      await authService.logout('no-separator');
+
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('should do nothing when user is not found', async () => {
+      (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+
+      await authService.logout('999:some-token');
+
+      expect(refreshTokenService.revokeRefreshToken).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('refresh', () => {
+    it('should return failure when cookie is undefined', async () => {
+      const result = await authService.refresh(undefined);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Refresh token not found');
+    });
+
+    it('should return failure for malformed cookie', async () => {
+      const result = await authService.refresh('no-separator');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Invalid refresh token format');
+    });
+
+    it('should return failure for invalid refresh token', async () => {
+      refreshTokenService.validateRefreshToken.mockResolvedValue({
+        isValid: false,
+        user: null,
+        tokenFamilyId: null,
+      });
+
+      const result = await authService.refresh('1:bad-token');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Invalid or expired refresh token');
+    });
+
+    it('should revoke token and fail for inactive user', async () => {
+      const inactiveUser = {
+        id: 1,
+        email: 'test@example.com',
+        firstName: 'Test',
+        isActive: false,
+      };
+      refreshTokenService.validateRefreshToken.mockResolvedValue({
+        isValid: true,
+        user: inactiveUser,
+        tokenFamilyId: 'family-1',
+      });
+
+      const result = await authService.refresh('1:valid-token');
+
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Account is inactive');
+      expect(refreshTokenService.revokeRefreshToken).toHaveBeenCalledWith(
+        inactiveUser,
+      );
+    });
+
+    it('should return new tokens for valid refresh', async () => {
+      const user = {
+        id: 1,
+        email: 'test@example.com',
+        firstName: 'Test',
+        isActive: true,
+      };
+      refreshTokenService.validateRefreshToken.mockResolvedValue({
+        isValid: true,
+        user,
+        tokenFamilyId: 'family-1',
+      });
+      (prisma.userRole.findMany as jest.Mock).mockResolvedValue([
+        { role: { name: 'User' } },
+      ]);
+
+      const result = await authService.refresh('1:valid-token');
+
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Token refreshed successfully');
+      expect(result.accessToken).toBe('mock-access-token');
+      expect(result.refreshCookieValue).toBe('1:mock-refresh-token');
+      expect(refreshTokenService.storeRefreshToken).toHaveBeenCalledWith(
+        user,
+        'mock-refresh-token',
+        'family-1',
+      );
     });
   });
 

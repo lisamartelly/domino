@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 
-function Login() {
+function Login({ showRegisterLink = true }: { showRegisterLink?: boolean }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -121,19 +121,21 @@ function Login() {
           {/* TODO: Re-enable social login (Google/GitHub) when OAuth is implemented */}
 
           {/* Sign Up Link */}
-          <p className="mt-6 text-center text-sm text-charcoal-600">
-            Don't have an account?{" "}
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                window.dispatchEvent(new CustomEvent("switchToRegister"));
-              }}
-              className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
-            >
-              Sign up
-            </a>
-          </p>
+          {showRegisterLink && (
+            <p className="mt-6 text-center text-sm text-charcoal-600">
+              Don't have an account?{" "}
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.dispatchEvent(new CustomEvent("switchToRegister"));
+                }}
+                className="text-primary-600 hover:text-primary-700 font-medium transition-colors"
+              >
+                Sign up
+              </a>
+            </p>
+          )}
         </div>
       </div>
     </div>
