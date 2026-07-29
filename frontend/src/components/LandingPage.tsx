@@ -52,8 +52,67 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-cream-50">
-      {/* ── Hero ── */}
-      <section className="relative min-h-[75vh] md:min-h-[100vh] flex items-center justify-center overflow-hidden">
+      {/* ── Hero: Mobile ── */}
+      <div className="md:hidden flex flex-col">
+        {/* Photo with logo overlay */}
+        <div className="relative">
+          <img
+            src="/images/hero/mobile-hero-2.png"
+            alt="Friends together"
+            className="w-full object-cover max-h-[70vh]"
+          />
+          <div className="absolute inset-0 bg-charcoal-950/25" />
+          <img
+            src="/images/logos/DSC_Primary_Cream.png"
+            alt="Domino Social Club"
+            className="absolute bottom-[15%] left-1/2 -translate-x-1/2 w-80"
+          />
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
+            <svg
+              className="w-5 h-5 text-cream-50/60 animate-bounce"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+
+        {/* CTA band */}
+        <section className="bg-primary-500 py-6 px-6 text-center">
+          <p className="text-white text-xl font-semibold leading-snug mb-1">
+            Where people meet their people
+          </p>
+          <p className="text-white/70 text-sm mb-5">
+            Connecting the good folks of Minneapolis &amp; Saint Paul through activities, events, and matchmaking
+          </p>
+          <button
+            onClick={() => scrollTo("join")}
+            className="w-full max-w-xs mx-auto bg-white hover:bg-cream-50 text-primary-500 font-semibold py-3 px-8 rounded-lg transition-colors shadow-md text-sm tracking-wide uppercase"
+          >
+            Join the Club
+          </button>
+          <div className="flex justify-center gap-6 mt-3">
+            <button
+              onClick={() => scrollTo("about")}
+              className="text-white/70 hover:text-white text-sm font-medium transition-colors"
+            >
+              Details
+            </button>
+            <button
+              onClick={() => scrollTo("contact")}
+              className="text-white/70 hover:text-white text-sm font-medium transition-colors"
+            >
+              Contact
+            </button>
+          </div>
+        </section>
+      </div>
+
+      {/* ── Hero: Desktop ── */}
+      <section className="relative hidden md:flex min-h-screen items-center justify-center overflow-hidden">
         {HERO_IMAGES.map((img, i) => (
           <div
             key={img.src}
@@ -71,39 +130,37 @@ export function LandingPage() {
           <img
             src="/images/logos/DSC_Primary_Cream.png"
             alt="Domino Social Club"
-            className="h-56 md:h-80 mx-auto mb-8"
+            className="h-80 mx-auto mb-8"
           />
-          <p className="text-cream-50 text-xl md:text-2xl font-semibold leading-snug max-w-lg mx-auto mb-4">
+          <p className="text-cream-50 text-2xl font-semibold leading-snug max-w-lg mx-auto mb-4">
             Where people meet their people
           </p>
-          <p className="text-cream-100 text-sm md:text-lg leading-relaxed max-w-lg mx-auto mb-12 whitespace-nowrap">
-            Serving the good folks of Minneapolis and Saint Paul
+          <p className="text-cream-100 text-lg leading-relaxed max-w-lg mx-auto mb-12">
+          Connecting the good folks of Minneapolis &amp; Saint Paul through activities, events, and matchmaking
           </p>
 
-          {/* Nav buttons */}
-          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 w-full max-w-xs sm:max-w-none mx-auto">
+          <div className="flex flex-row justify-center gap-4">
             <button
               onClick={() => scrollTo("about")}
-              className="bg-white/10 hover:bg-white/20 backdrop-blur text-cream-50 font-semibold py-3 px-8 rounded-lg transition-colors border border-cream-50/25 text-sm tracking-wide uppercase w-full sm:w-auto"
+              className="bg-white/10 hover:bg-white/20 backdrop-blur text-cream-50 font-semibold py-3 px-8 rounded-lg transition-colors border border-cream-50/25 text-sm tracking-wide uppercase"
             >
-              About
+              Details
             </button>
             <button
               onClick={() => scrollTo("join")}
-              className="bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-sm tracking-wide uppercase w-full sm:w-auto"
+              className="bg-primary-500 hover:bg-primary-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors shadow-lg hover:shadow-xl text-sm tracking-wide uppercase"
             >
               Join the Club
             </button>
             <button
               onClick={() => scrollTo("contact")}
-              className="bg-white/10 hover:bg-white/20 backdrop-blur text-cream-50 font-semibold py-3 px-8 rounded-lg transition-colors border border-cream-50/25 text-sm tracking-wide uppercase w-full sm:w-auto"
+              className="bg-white/10 hover:bg-white/20 backdrop-blur text-cream-50 font-semibold py-3 px-8 rounded-lg transition-colors border border-cream-50/25 text-sm tracking-wide uppercase"
             >
               Contact Us
             </button>
           </div>
         </div>
 
-        {/* Scroll hint */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
           <svg
             className="w-6 h-6 text-cream-50/50 animate-bounce"
@@ -112,11 +169,7 @@ export function LandingPage() {
             strokeWidth={2}
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 9l-7 7-7-7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
           </svg>
         </div>
       </section>
