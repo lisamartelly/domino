@@ -433,7 +433,17 @@ describe('EventsService', () => {
       const result = await service.listPublished();
 
       expect(prisma.event.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { status: 'published' } }),
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'published',
+            occurrences: {
+              some: {
+                startTime: { gte: expect.any(Date) },
+                isCancelled: false,
+              },
+            },
+          }),
+        }),
       );
       expect(result).toHaveLength(1);
       expect(result[0].spotsRemaining).toBe(17);

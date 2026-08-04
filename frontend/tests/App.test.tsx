@@ -17,6 +17,10 @@ vi.mock("../src/components/AuthPage", () => ({
   AuthPage: () => <div data-testid="auth-page">Auth Page</div>,
 }));
 
+vi.mock("../src/components/layout/PublicLayout", () => ({
+  PublicLayout: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
 describe("App", () => {
   beforeEach(() => {
     vi.clearAllMocks();

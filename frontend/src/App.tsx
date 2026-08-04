@@ -10,6 +10,9 @@ import {
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AuthPage } from "./components/AuthPage";
 import { LandingPage } from "./components/LandingPage";
+import { AboutPage } from "./components/AboutPage";
+import { MatchmakingPage } from "./components/MatchmakingPage";
+import { ContactPage } from "./components/ContactPage";
 import { IntakePage } from "./components/IntakePage";
 import { Dashboard } from "./components/Dashboard";
 import { MatchSection } from "./components/matching/MatchSection";
@@ -37,16 +40,14 @@ function PostAuthRedirect() {
   return <Navigate to={to} replace />;
 }
 
+const PUBLIC_PATHS = ["/", "/login", "/events", "/about", "/matchmaking", "/contact"];
+
 function AppRoutes() {
   const { isAuthenticated, hasCompletedIntake, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  /** Tracks auth after initial check so we only send users home on logout, not on cold deep-links while logged out. */
   const authAfterLoad = useRef<boolean | null>(null);
 
-  const publicPaths = ["/", "/login", "/events"];
-
-  // Redirect away from intake once completed
   useEffect(() => {
     if (
       !isLoading &&
@@ -65,13 +66,12 @@ function AppRoutes() {
     navigate,
   ]);
 
-  // After logout (or session loss), leave protected areas — not on first load already logged out
   useEffect(() => {
     if (isLoading) return;
 
     const wasAuthenticated = authAfterLoad.current;
     const isPublicPath =
-      publicPaths.includes(location.pathname) ||
+      PUBLIC_PATHS.includes(location.pathname) ||
       location.pathname.startsWith("/events/") &&
         !location.pathname.startsWith("/events/manage");
     if (
@@ -94,10 +94,57 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* ── Public pages ── */}
       <Route
         path="/"
         element={
-          isAuthenticated ? <PostAuthRedirect /> : <LandingPage />
+          isAuthenticated ? (
+            <PostAuthRedirect />
+          ) : (
+            <PublicLayout flush>
+              <LandingPage />
+            </PublicLayout>
+          )
+        }
+      />
+      <Route
+        path="/about"
+        element={
+          <PublicLayout>
+            <AboutPage />
+          </PublicLayout>
+        }
+      />
+      <Route
+        path="/matchmaking"
+        element={
+          <PublicLayout>
+            <MatchmakingPage />
+          </PublicLayout>
+        }
+      />
+      <Route
+        path="/contact"
+        element={
+          <PublicLayout>
+            <ContactPage />
+          </PublicLayout>
+        }
+      />
+      <Route
+        path="/events"
+        element={
+          <PublicLayout>
+            <EventsPage />
+          </PublicLayout>
+        }
+      />
+      <Route
+        path="/events/:id"
+        element={
+          <PublicLayout>
+            <EventDetailPage />
+          </PublicLayout>
         }
       />
       <Route
@@ -106,6 +153,8 @@ function AppRoutes() {
           isAuthenticated ? <PostAuthRedirect /> : <AuthPage />
         }
       />
+
+      {/* ── Protected pages ── */}
       <Route
         path="/intake"
         element={
@@ -167,14 +216,6 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/events"
-        element={
-          <PublicLayout>
-            <EventsPage />
-          </PublicLayout>
-        }
-      />
-      <Route
         path="/events/manage"
         element={
           <ProtectedRoute>
@@ -204,14 +245,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/events/:id"
-        element={
-          <PublicLayout>
-            <EventDetailPage />
-          </PublicLayout>
-        }
-      />
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

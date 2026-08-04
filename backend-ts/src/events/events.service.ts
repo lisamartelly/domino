@@ -238,8 +238,18 @@ export class EventsService {
   // ── User-facing endpoints ──
 
   async listPublished(): Promise<EventSummaryDto[]> {
+    const now = new Date();
     const events = await this.prisma.event.findMany({
-      where: { status: 'published' },
+      where: {
+        status: 'published',
+        // Keep events that still have an upcoming (non-cancelled) occurrence
+        occurrences: {
+          some: {
+            startTime: { gte: now },
+            isCancelled: false,
+          },
+        },
+      },
       orderBy: { startTime: 'asc' },
       include: { _count: { select: { registrations: true } } },
     });
