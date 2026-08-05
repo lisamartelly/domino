@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS event_interests;
+ALTER TABLE events ALTER COLUMN start_time SET NOT NULL;
+ALTER TABLE events DROP COLUMN IF EXISTS phase;

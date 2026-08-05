@@ -6,7 +6,7 @@ import type { NewsletterSubscriberDto } from './dto/newsletter.dto';
 export class NewsletterService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async subscribe(email: string): Promise<boolean> {
+  async subscribe(email: string, source?: string): Promise<boolean> {
     const normalised = email.trim().toLowerCase();
 
     const existing = await this.prisma.newsletterSubscriber.findUnique({
@@ -18,7 +18,7 @@ export class NewsletterService {
     }
 
     await this.prisma.newsletterSubscriber.create({
-      data: { email: normalised },
+      data: { email: normalised, source: source ?? 'newsletter' },
     });
 
     return true;
@@ -32,6 +32,7 @@ export class NewsletterService {
     return subscribers.map((s) => ({
       id: s.id,
       email: s.email,
+      source: s.source,
       subscribedAt: s.subscribedAt.toISOString(),
     }));
   }

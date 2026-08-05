@@ -289,8 +289,8 @@ export function Dashboard() {
                     </p>
                     <div className="space-y-0.5 text-sm text-charcoal-500">
                       <div>
-                        {formatEventDate(event.startTime)} ·{" "}
-                        {formatEventTime(event.startTime)}
+                        {event.startTime ? formatEventDate(event.startTime) : "TBD"} ·{" "}
+                        {event.startTime ? formatEventTime(event.startTime) : ""}
                       </div>
                       <div>{event.location}</div>
                     </div>

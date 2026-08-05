@@ -12,7 +12,7 @@ export class NewsletterController {
 
   @Post('subscribe')
   async subscribe(@Body() body: SubscribeRequest): Promise<SubscribeResponse> {
-    const isNew = await this.service.subscribe(body.email);
+    const isNew = await this.service.subscribe(body.email, body.source);
     return { subscribed: isNew };
   }
 

@@ -4,6 +4,8 @@ import {
   IsInt,
   IsOptional,
   IsIn,
+  IsBoolean,
+  IsEmail,
   MaxLength,
   Min,
   IsDateString,
@@ -25,12 +27,17 @@ export interface EventDto {
   location: string;
   costCents: number;
   capacity: number | null;
-  startTime: string;
+  startTime: string | null;
   durationMinutes: number;
   frequencyType: string;
   frequencyCount: number;
   status: string;
+  phase: string;
+  anticipatedPriceRange: string | null;
+  imageUrl: string | null;
+  featuredOnHomepage: boolean;
   registrationCount: number;
+  interestCount: number;
   occurrences: EventOccurrenceDto[];
   createdAt: string;
 }
@@ -42,12 +49,17 @@ export interface EventSummaryDto {
   location: string;
   costCents: number;
   capacity: number | null;
-  startTime: string;
+  startTime: string | null;
   durationMinutes: number;
   frequencyType: string;
   frequencyCount: number;
   status: string;
+  phase: string;
+  anticipatedPriceRange: string | null;
+  imageUrl: string | null;
+  featuredOnHomepage: boolean;
   registrationCount: number;
+  interestCount: number;
   spotsRemaining: number | null;
 }
 
@@ -92,8 +104,9 @@ export class CreateEventRequest {
   @Min(1)
   capacity?: number;
 
+  @IsOptional()
   @IsDateString()
-  startTime: string;
+  startTime?: string;
 
   @IsInt()
   @Min(1)
@@ -107,6 +120,16 @@ export class CreateEventRequest {
   @IsInt()
   @Min(1)
   frequencyCount?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['gathering', 'scheduled'])
+  phase?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  anticipatedPriceRange?: string;
 }
 
 export class UpdateEventRequest {
@@ -156,4 +179,39 @@ export class UpdateEventRequest {
   @IsInt()
   @Min(1)
   frequencyCount?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['gathering', 'scheduled'])
+  phase?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  anticipatedPriceRange?: string;
+}
+
+// ── Interest sign-up ──
+
+export interface EventInterestDto {
+  id: number;
+  eventId: number;
+  email: string;
+  openToRomance: boolean;
+  aboutMe: string;
+  createdAt: string;
+}
+
+export class SubmitEventInterestRequest {
+  @IsEmail()
+  @MaxLength(256)
+  email: string;
+
+  @IsBoolean()
+  openToRomance: boolean;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(2000)
+  aboutMe: string;
 }

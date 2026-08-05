@@ -527,12 +527,17 @@ export interface EventDto {
   location: string;
   costCents: number;
   capacity: number | null;
-  startTime: string;
+  startTime: string | null;
   durationMinutes: number;
   frequencyType: string;
   frequencyCount: number;
   status: string;
+  phase: string;
+  anticipatedPriceRange: string | null;
+  imageUrl: string | null;
+  featuredOnHomepage: boolean;
   registrationCount: number;
+  interestCount: number;
   occurrences: EventOccurrenceDto[];
   createdAt: string;
 }
@@ -544,12 +549,17 @@ export interface EventSummaryDto {
   location: string;
   costCents: number;
   capacity: number | null;
-  startTime: string;
+  startTime: string | null;
   durationMinutes: number;
   frequencyType: string;
   frequencyCount: number;
   status: string;
+  phase: string;
+  anticipatedPriceRange: string | null;
+  imageUrl: string | null;
+  featuredOnHomepage: boolean;
   registrationCount: number;
+  interestCount: number;
   spotsRemaining: number | null;
 }
 
@@ -573,10 +583,12 @@ export interface CreateEventRequest {
   location: string;
   costCents: number;
   capacity?: number;
-  startTime: string;
+  startTime?: string;
   durationMinutes: number;
   frequencyType: string;
   frequencyCount?: number;
+  phase?: string;
+  anticipatedPriceRange?: string;
 }
 
 export interface UpdateEventRequest {
@@ -589,11 +601,25 @@ export interface UpdateEventRequest {
   durationMinutes?: number;
   frequencyType?: string;
   frequencyCount?: number;
+  phase?: string;
+  anticipatedPriceRange?: string;
+}
+
+export interface SubmitEventInterestRequest {
+  email: string;
+  openToRomance: boolean;
+  aboutMe: string;
 }
 
 export const getEvents = async (): Promise<EventSummaryDto[]> => {
   const response = await fetchWithAuth("/api/events");
   if (!response.ok) throw new Error("Failed to fetch events");
+  return response.json();
+};
+
+export const getFeaturedEvents = async (): Promise<EventSummaryDto[]> => {
+  const response = await fetchWithAuth("/api/events/featured");
+  if (!response.ok) throw new Error("Failed to fetch featured events");
   return response.json();
 };
 
@@ -660,6 +686,21 @@ export const cancelEvent = async (id: number): Promise<EventDto> => {
   return response.json();
 };
 
+export const setEventFeatured = async (
+  id: number,
+  featured: boolean
+): Promise<EventDto> => {
+  const response = await fetchWithAuth(`/api/events/${id}/feature`, {
+    method: "PATCH",
+    body: JSON.stringify({ featured }),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to update featured status");
+  }
+  return response.json();
+};
+
 export const registerForEvent = async (
   eventId: number
 ): Promise<RegisterEventResponse> => {
@@ -693,6 +734,22 @@ export const getMyEventRegistrations = async (): Promise<
   return response.json();
 };
 
+export const submitEventInterest = async (
+  eventId: number,
+  data: SubmitEventInterestRequest
+): Promise<{ submitted: boolean }> => {
+  const response = await fetch(`/api/events/${eventId}/interest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to submit interest");
+  }
+  return response.json();
+};
+
 // ── Newsletter ──
 
 export interface SubscribeResponse {
@@ -700,12 +757,13 @@ export interface SubscribeResponse {
 }
 
 export const subscribeToNewsletter = async (
-  email: string
+  email: string,
+  source?: string
 ): Promise<SubscribeResponse> => {
   const response = await fetch("/api/newsletter/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, source }),
   });
   if (!response.ok) throw new Error("Failed to subscribe");
   return response.json();
@@ -714,6 +772,7 @@ export const subscribeToNewsletter = async (
 export interface NewsletterSubscriberDto {
   id: number;
   email: string;
+  source: string;
   subscribedAt: string;
 }
 

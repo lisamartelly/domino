@@ -378,24 +378,29 @@ model MatchUser {
 // ============================================================
 
 model Event {
-  id              Int      @id @default(autoincrement())
-  name            String   @db.VarChar(255)
-  description     String   @db.VarChar(2000)
-  location        String   @db.VarChar(500)
-  costCents       Int      @map("cost_cents")
+  id              Int       @id @default(autoincrement())
+  name            String    @db.VarChar(255)
+  description     String    @db.VarChar(2000)
+  location        String    @db.VarChar(500)
+  costCents       Int       @map("cost_cents")
   capacity        Int?
-  startTime       DateTime @map("start_time") @db.Timestamptz()
-  durationMinutes Int      @map("duration_minutes")
-  frequencyType   String   @map("frequency_type") @db.VarChar(50)
-  frequencyCount  Int      @default(1) @map("frequency_count")
-  status          String   @default("draft") @db.VarChar(50)
-  createdByUserId Int      @map("created_by_user_id")
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  startTime       DateTime? @map("start_time") @db.Timestamptz()
+  durationMinutes Int       @map("duration_minutes")
+  frequencyType   String    @map("frequency_type") @db.VarChar(50)
+  frequencyCount  Int       @default(1) @map("frequency_count")
+  status          String    @default("draft") @db.VarChar(50)
+  phase                String  @default("scheduled") @db.VarChar(50)
+  anticipatedPriceRange String? @map("anticipated_price_range") @db.VarChar(100)
+  imageUrl             String? @map("image_url") @db.VarChar(500)
+  featuredOnHomepage   Boolean @default(false) @map("featured_on_homepage")
+  createdByUserId      Int     @map("created_by_user_id")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
 
   createdByUser User               @relation("eventsCreated", fields: [createdByUserId], references: [id], onDelete: Cascade)
   occurrences   EventOccurrence[]
   registrations EventRegistration[]
+  interests     EventInterest[]
 
   @@index([createdByUserId])
   @@index([status])
@@ -438,6 +443,21 @@ model EventRegistration {
   @@map("event_registrations")
 }
 
+model EventInterest {
+  id            Int      @id @default(autoincrement())
+  eventId       Int      @map("event_id")
+  email         String   @db.VarChar(256)
+  openToRomance Boolean  @map("open_to_romance")
+  aboutMe       String   @map("about_me") @db.VarChar(2000)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, email])
+  @@index([eventId])
+  @@map("event_interests")
+}
+
 // ============================================================
 // Newsletter
 // ============================================================
@@ -445,6 +465,7 @@ model EventRegistration {
 model NewsletterSubscriber {
   id           Int      @id @default(autoincrement())
   email        String   @unique @db.VarChar(256)
+  source       String   @default("newsletter") @db.VarChar(50)
   subscribedAt DateTime @default(now()) @map("subscribed_at") @db.Timestamptz()
 
   @@map("newsletter_subscribers")

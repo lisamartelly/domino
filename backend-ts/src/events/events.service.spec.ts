@@ -29,6 +29,10 @@ describe('EventsService', () => {
         findUnique: jest.fn(),
         update: jest.fn(),
       },
+      eventInterest: {
+        upsert: jest.fn(),
+        findMany: jest.fn(),
+      },
     } as unknown as jest.Mocked<PrismaService>;
 
     stripe = {
@@ -433,7 +437,23 @@ describe('EventsService', () => {
       const result = await service.listPublished();
 
       expect(prisma.event.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { status: 'published' } }),
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'published',
+            OR: [
+              {
+                phase: 'scheduled',
+                occurrences: {
+                  some: {
+                    startTime: { gte: expect.any(Date) },
+                    isCancelled: false,
+                  },
+                },
+              },
+              { phase: 'gathering' },
+            ],
+          }),
+        }),
       );
       expect(result).toHaveLength(1);
       expect(result[0].spotsRemaining).toBe(17);
@@ -481,6 +501,282 @@ describe('EventsService', () => {
       expect(result).toHaveLength(1);
       expect(result[0].eventName).toBe('Test Event');
       expect(result[0].status).toBe('confirmed');
+    });
+  });
+
+  const mockFullEvent = {
+    id: 1,
+    name: 'Test Event',
+    description: 'A test',
+    location: 'Here',
+    costCents: 0,
+    capacity: 20,
+    startTime: new Date('2026-08-01T18:00:00Z'),
+    durationMinutes: 60,
+    frequencyType: 'ONCE',
+    frequencyCount: 1,
+    status: 'draft',
+    phase: 'scheduled',
+    anticipatedPriceRange: null,
+    imageUrl: null,
+    featuredOnHomepage: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    occurrences: [
+      {
+        id: 1,
+        startTime: new Date('2026-08-01T18:00:00Z'),
+        endTime: new Date('2026-08-01T19:00:00Z'),
+        isCancelled: false,
+      },
+    ],
+    _count: { registrations: 0, interests: 0 },
+  };
+
+  describe('update', () => {
+    it('should return not_found for non-existent event', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.update(999, { name: 'Updated' });
+
+      expect(result.kind).toBe('not_found');
+    });
+
+    it('should reject updating a cancelled event', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue({
+        ...mockFullEvent,
+        status: 'cancelled',
+      });
+
+      const result = await service.update(1, { name: 'Updated' });
+
+      expect(result.kind).toBe('invalid');
+    });
+
+    it('should update event name without regenerating occurrences', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue(mockFullEvent);
+      (prisma.event.update as jest.Mock).mockResolvedValue({
+        ...mockFullEvent,
+        name: 'Updated Name',
+      });
+
+      const result = await service.update(1, { name: 'Updated Name' });
+
+      expect(result.kind).toBe('success');
+      expect(prisma.eventOccurrence.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('should regenerate occurrences when startTime changes', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue(mockFullEvent);
+      (prisma.eventOccurrence.deleteMany as jest.Mock).mockResolvedValue({});
+      (prisma.eventOccurrence.createMany as jest.Mock).mockResolvedValue({});
+      (prisma.event.update as jest.Mock).mockResolvedValue(mockFullEvent);
+
+      await service.update(1, { startTime: '2026-09-01T18:00:00Z' });
+
+      expect(prisma.eventOccurrence.deleteMany).toHaveBeenCalledWith({
+        where: { eventId: 1 },
+      });
+      expect(prisma.eventOccurrence.createMany).toHaveBeenCalled();
+    });
+  });
+
+  describe('getById', () => {
+    it('should return not_found for non-existent event', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.getById(999);
+
+      expect(result.kind).toBe('not_found');
+    });
+
+    it('should return event details', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue(mockFullEvent);
+
+      const result = await service.getById(1);
+
+      expect(result.kind).toBe('success');
+      if (result.kind === 'success') {
+        expect(result.value.name).toBe('Test Event');
+        expect(result.value.occurrences).toHaveLength(1);
+      }
+    });
+  });
+
+  describe('listAll', () => {
+    it('should return all events for admin', async () => {
+      (prisma.event.findMany as jest.Mock).mockResolvedValue([
+        {
+          ...mockFullEvent,
+          status: 'draft',
+        },
+        {
+          ...mockFullEvent,
+          id: 2,
+          status: 'published',
+        },
+      ]);
+
+      const result = await service.listAll();
+
+      expect(result).toHaveLength(2);
+    });
+  });
+
+  describe('setFeatured', () => {
+    it('should return not_found for non-existent event', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.setFeatured(999, true);
+
+      expect(result.kind).toBe('not_found');
+    });
+
+    it('should set featured flag on an event', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue(mockFullEvent);
+      (prisma.event.update as jest.Mock).mockResolvedValue({
+        ...mockFullEvent,
+        featuredOnHomepage: true,
+      });
+
+      const result = await service.setFeatured(1, true);
+
+      expect(result.kind).toBe('success');
+      expect(prisma.event.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: { featuredOnHomepage: true },
+        }),
+      );
+    });
+  });
+
+  describe('listFeatured', () => {
+    it('should return featured events when they exist', async () => {
+      (prisma.event.findMany as jest.Mock).mockResolvedValue([
+        {
+          ...mockFullEvent,
+          status: 'published',
+          featuredOnHomepage: true,
+        },
+      ]);
+
+      const result = await service.listFeatured();
+
+      expect(result).toHaveLength(1);
+    });
+
+    it('should fall back to listPublished when no featured events', async () => {
+      (prisma.event.findMany as jest.Mock)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([
+          {
+            ...mockFullEvent,
+            status: 'published',
+          },
+        ]);
+
+      const result = await service.listFeatured();
+
+      expect(prisma.event.findMany).toHaveBeenCalledTimes(2);
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('submitInterest', () => {
+    it('should return not_found for non-existent event', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.submitInterest(999, {
+        email: 'test@example.com',
+        openToRomance: false,
+        aboutMe: 'Hi',
+      });
+
+      expect(result.kind).toBe('not_found');
+    });
+
+    it('should reject unpublished event', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue({
+        ...mockFullEvent,
+        status: 'draft',
+      });
+
+      const result = await service.submitInterest(1, {
+        email: 'test@example.com',
+        openToRomance: false,
+        aboutMe: 'Hi',
+      });
+
+      expect(result.kind).toBe('invalid');
+    });
+
+    it('should reject non-gathering phase event', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue({
+        ...mockFullEvent,
+        status: 'published',
+        phase: 'scheduled',
+      });
+
+      const result = await service.submitInterest(1, {
+        email: 'test@example.com',
+        openToRomance: false,
+        aboutMe: 'Hi',
+      });
+
+      expect(result.kind).toBe('invalid');
+    });
+
+    it('should upsert interest for gathering-phase event', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue({
+        ...mockFullEvent,
+        status: 'published',
+        phase: 'gathering',
+      });
+      (prisma.eventInterest.upsert as jest.Mock).mockResolvedValue({});
+
+      const result = await service.submitInterest(1, {
+        email: 'test@example.com',
+        openToRomance: true,
+        aboutMe: 'Hello!',
+      });
+
+      expect(result.kind).toBe('success');
+      if (result.kind === 'success') {
+        expect(result.value.submitted).toBe(true);
+      }
+      expect(prisma.eventInterest.upsert).toHaveBeenCalled();
+    });
+  });
+
+  describe('getInterests', () => {
+    it('should return not_found for non-existent event', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue(null);
+
+      const result = await service.getInterests(999);
+
+      expect(result.kind).toBe('not_found');
+    });
+
+    it('should return interests for an event', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue(mockFullEvent);
+      (prisma.eventInterest.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 1,
+          eventId: 1,
+          email: 'user@test.com',
+          openToRomance: false,
+          aboutMe: 'Hi there',
+          createdAt: new Date('2026-08-01T10:00:00Z'),
+        },
+      ]);
+
+      const result = await service.getInterests(1);
+
+      expect(result.kind).toBe('success');
+      if (result.kind === 'success') {
+        expect(result.value).toHaveLength(1);
+        expect(result.value[0].email).toBe('user@test.com');
+      }
     });
   });
 });
