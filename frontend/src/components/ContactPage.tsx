@@ -1,4 +1,3 @@
-import { NewsletterSignup } from "./NewsletterSignup";
 
 export function ContactPage() {
   return (

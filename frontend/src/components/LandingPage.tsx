@@ -3,10 +3,6 @@ import { Link } from "react-router-dom";
 import { EventCardScroller } from "./events/EventCardScroller";
 import { getFeaturedEvents, type EventSummaryDto } from "../services/api";
 
-function scrollTo(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-}
-
 export function LandingPage() {
   const [featuredEvents, setFeaturedEvents] = useState<EventSummaryDto[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
