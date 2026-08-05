@@ -128,10 +128,6 @@ export function EventDetailPage() {
     event.capacity !== null &&
     event.registrationCount >= event.capacity;
   const isRegistered = !!myReg;
-  const spotsRemaining =
-    event.capacity !== null
-      ? Math.max(0, event.capacity - event.registrationCount)
-      : null;
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -257,12 +253,10 @@ export function EventDetailPage() {
                 </div>
                 <div className="rounded-xl bg-cream-50 p-4">
                   <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
-                    Spots
+                    Availability
                   </span>
-                  <span className="text-charcoal-900 font-semibold">
-                    {spotsRemaining !== null
-                      ? `${spotsRemaining} of ${event.capacity} remaining`
-                      : "Unlimited"}
+                  <span className={`font-semibold ${isFull ? "text-primary-600" : "text-green-700"}`}>
+                    {event.capacity === null ? "Open" : isFull ? "Full" : "Open"}
                   </span>
                 </div>
               </div>

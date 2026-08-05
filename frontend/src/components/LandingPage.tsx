@@ -93,7 +93,7 @@ export function LandingPage() {
                 imageAlt: "Friends with plants",
                 link: "/events",
                 paragraphs: [
-                  "We create events centered around shared interests, welcoming environments, and genuine conversation.",
+                  "We create events centered around shared interests, and we facilitate conversation so you actually get to know people! We also have recurring series you can join.",
                   "When we have something in common or opportunities to see each other more than once, the pressure is lower. This lets us be ourselves and make real connections. Join us!", 
                 ],
               },

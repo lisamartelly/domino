@@ -2,15 +2,24 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { getEvents, type EventSummaryDto } from "../../services/api";
 
-const PLACEHOLDER_IMAGES = [
-  "/images/hero/crafty.jpg",
-  "/images/hero/book-club.jpg",
-  "/images/hero/card-game.jpg",
-  "/images/hero/catan.jpg",
-  "/images/hero/hikers.jpg",
-  "/images/about/plant-boys.jpg",
-  "/images/about/happy-girls.jpg",
-  "/images/about/sparklers.jpg",
+const AVATARS = [
+  "/images/avatars/Smiley1_Charcoal.png",
+  "/images/avatars/Smiley2_Charcoal.png",
+  "/images/avatars/Smiley3_Charcoal.png",
+  "/images/avatars/Smiley4_Charcoal.png",
+  "/images/avatars/Smiley5_Charcoal.png",
+  "/images/avatars/Smiley6_Charcoal.png",
+  "/images/avatars/Smiley7_Charcoal.png",
+];
+
+const CARD_COLORS = [
+  "bg-accent1-500",
+  "bg-primary-500",
+  "bg-accent2-400",
+  "bg-accent1-400",
+  "bg-primary-400",
+  "bg-accent2-300",
+  "bg-accent1-300",
 ];
 
 const FREQUENCY_LABELS: Record<string, string> = {
@@ -28,44 +37,40 @@ function formatDate(iso: string): string {
   });
 }
 
-function eventImage(eventId: number): string {
-  return PLACEHOLDER_IMAGES[eventId % PLACEHOLDER_IMAGES.length];
-}
-
-function EventCard({ event }: { event: EventSummaryDto }) {
+function EventCard({ event, index }: { event: EventSummaryDto; index: number }) {
   const isGathering = event.phase === "gathering";
   const recurrence =
     FREQUENCY_LABELS[event.frequencyType] ?? event.frequencyType;
   const isRecurring = event.frequencyType !== "ONCE";
+
+  const avatar = AVATARS[index % AVATARS.length];
+  const bgColor = CARD_COLORS[index % CARD_COLORS.length];
 
   return (
     <Link
       to={`/events/${event.id}`}
       className="group flex flex-col h-full overflow-hidden rounded-2xl bg-white border-3 border-accent1-500 transition-all duration-300 hover:-translate-y-1"
     >
-      {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className={`relative aspect-[4/3] ${bgColor} flex items-center justify-center`}>
         <img
-          src={eventImage(event.id)}
+          src={avatar}
           alt=""
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="h-3/5 w-3/5 object-contain opacity-20 transition-transform duration-500 group-hover:scale-110"
         />
 
-        {/* Badge */}
         <span
           className={`absolute top-2 left-2 rounded-lg px-2 py-0.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider ${
             isGathering
-              ? "bg-accent1-500/90 text-white"
+              ? "bg-charcoal-500/80 text-white"
               : isRecurring
-                ? "bg-accent1-500 text-white"
-                : "bg-cream-50 text-charcoal-700"
+                ? "bg-charcoal-500/80 text-white"
+                : "bg-cream-50/90 text-charcoal-700"
           }`}
         >
           {isGathering ? "Gauging Interest" : recurrence}
         </span>
       </div>
 
-      {/* Content */}
       <div className="px-2.5 py-2.5 md:px-3 md:py-3 flex-1 flex flex-col">
         <h3 className="text-xs md:text-sm font-bold text-charcoal-900 leading-snug line-clamp-2 group-hover:text-accent1-600 transition-colors">
           {event.name}
@@ -163,9 +168,9 @@ export function EventCardScroller({ events: externalEvents }: EventCardScrollerP
         ref={scrollRef}
         className="grid grid-flow-col auto-cols-[calc((100%-0.5rem*2)/3)] md:auto-cols-[calc((100%-0.75rem*5)/6)] gap-2 md:gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory items-stretch"
       >
-        {events.map((event) => (
+        {events.map((event, i) => (
           <div key={event.id} className="snap-start min-w-0 h-full">
-            <EventCard event={event} />
+            <EventCard event={event} index={i} />
           </div>
         ))}
       </div>

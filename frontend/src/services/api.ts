@@ -675,6 +675,17 @@ export const publishEvent = async (id: number): Promise<EventDto> => {
   return response.json();
 };
 
+export const unpublishEvent = async (id: number): Promise<EventDto> => {
+  const response = await fetchWithAuth(`/api/events/${id}/unpublish`, {
+    method: "PATCH",
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to unpublish event");
+  }
+  return response.json();
+};
+
 export const cancelEvent = async (id: number): Promise<EventDto> => {
   const response = await fetchWithAuth(`/api/events/${id}/cancel`, {
     method: "PATCH",
