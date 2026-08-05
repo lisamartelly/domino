@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import {
   getAllEvents,
   createEvent,
+  updateEvent,
   publishEvent,
+  unpublishEvent,
   cancelEvent,
   setEventFeatured,
   type EventSummaryDto,
   type CreateEventRequest,
+  type UpdateEventRequest,
 } from "../../services/api";
 
 function formatCost(cents: number): string {
@@ -54,6 +57,7 @@ export function EventManagePage() {
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<CreateEventRequest & { capacity?: number; phase: string }>(
     { ...emptyForm }
   );
@@ -72,7 +76,29 @@ export function EventManagePage() {
 
   const resetForm = () => {
     setFormOpen(false);
+    setEditingId(null);
     setForm({ ...emptyForm });
+    setError(null);
+  };
+
+  const handleEdit = (event: EventSummaryDto) => {
+    setEditingId(event.id);
+    setForm({
+      name: event.name,
+      description: event.description,
+      location: event.location,
+      costCents: event.costCents,
+      capacity: event.capacity ?? undefined,
+      startTime: event.startTime
+        ? new Date(event.startTime).toISOString().slice(0, 16)
+        : "",
+      durationMinutes: event.durationMinutes,
+      frequencyType: event.frequencyType,
+      frequencyCount: event.frequencyCount,
+      phase: event.phase,
+      anticipatedPriceRange: event.anticipatedPriceRange ?? "",
+    });
+    setFormOpen(true);
     setError(null);
   };
 
@@ -82,20 +108,37 @@ export function EventManagePage() {
     setError(null);
     try {
       const isGathering = form.phase === "gathering";
-      await createEvent({
-        name: form.name,
-        description: form.description,
-        location: form.location,
-        costCents: form.costCents,
-        capacity: form.capacity || undefined,
-        startTime: isGathering ? undefined : new Date(form.startTime!).toISOString(),
-        durationMinutes: form.durationMinutes,
-        frequencyType: form.frequencyType,
-        frequencyCount:
-          form.frequencyType === "ONCE" ? 1 : form.frequencyCount ?? 1,
-        phase: form.phase,
-        anticipatedPriceRange: form.anticipatedPriceRange || undefined,
-      });
+
+      if (editingId !== null) {
+        const payload: UpdateEventRequest = {
+          name: form.name,
+          description: form.description,
+          location: form.location,
+          costCents: form.costCents,
+          capacity: form.capacity || null,
+          startTime: isGathering ? undefined : form.startTime ? new Date(form.startTime).toISOString() : undefined,
+          durationMinutes: form.durationMinutes,
+          frequencyType: form.frequencyType,
+          frequencyCount: form.frequencyType === "ONCE" ? 1 : form.frequencyCount ?? 1,
+          phase: form.phase,
+          anticipatedPriceRange: form.anticipatedPriceRange || undefined,
+        };
+        await updateEvent(editingId, payload);
+      } else {
+        await createEvent({
+          name: form.name,
+          description: form.description,
+          location: form.location,
+          costCents: form.costCents,
+          capacity: form.capacity || undefined,
+          startTime: isGathering ? undefined : new Date(form.startTime!).toISOString(),
+          durationMinutes: form.durationMinutes,
+          frequencyType: form.frequencyType,
+          frequencyCount: form.frequencyType === "ONCE" ? 1 : form.frequencyCount ?? 1,
+          phase: form.phase,
+          anticipatedPriceRange: form.anticipatedPriceRange || undefined,
+        });
+      }
       resetForm();
       loadEvents();
     } catch (err: any) {
@@ -108,6 +151,15 @@ export function EventManagePage() {
   const handlePublish = async (id: number) => {
     try {
       await publishEvent(id);
+      loadEvents();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleUnpublish = async (id: number) => {
+    try {
+      await unpublishEvent(id);
       loadEvents();
     } catch (err: any) {
       setError(err.message);
@@ -165,7 +217,7 @@ export function EventManagePage() {
           className="rounded-2xl border border-charcoal-200 bg-white p-6 shadow-sm space-y-4"
         >
           <h2 className="text-lg font-semibold text-charcoal-900">
-            New Event
+            {editingId !== null ? "Edit Event" : "New Event"}
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -378,7 +430,9 @@ export function EventManagePage() {
               disabled={saving}
               className="bg-primary-500 hover:bg-primary-600 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors"
             >
-              {saving ? "Creating..." : "Create Event"}
+              {saving
+                ? editingId !== null ? "Saving..." : "Creating..."
+                : editingId !== null ? "Save Changes" : "Create Event"}
             </button>
             <button
               type="button"
@@ -438,7 +492,16 @@ export function EventManagePage() {
                     )}
                   </p>
                 </div>
-                <div className="flex gap-2 shrink-0 items-center">
+                <div className="flex gap-2 shrink-0 items-center flex-wrap justify-end">
+                  {event.status !== "cancelled" && (
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(event)}
+                      className="text-xs font-medium px-2 py-1 rounded-lg bg-charcoal-50 text-charcoal-600 hover:bg-charcoal-100 transition-colors"
+                    >
+                      Edit
+                    </button>
+                  )}
                   {event.status === "published" && (
                     <button
                       type="button"
@@ -460,6 +523,15 @@ export function EventManagePage() {
                       className="text-xs text-accent2-600 hover:text-accent2-700 underline"
                     >
                       Publish
+                    </button>
+                  )}
+                  {event.status === "published" && (
+                    <button
+                      type="button"
+                      onClick={() => handleUnpublish(event.id)}
+                      className="text-xs text-charcoal-500 hover:text-charcoal-700 underline"
+                    >
+                      Unpublish
                     </button>
                   )}
                   {event.status !== "cancelled" && (

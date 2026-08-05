@@ -220,6 +220,24 @@ export class EventsService {
     return success(this.toEventDto(updated));
   }
 
+  async unpublish(id: number): Promise<ServiceResult<EventDto>> {
+    const event = await this.prisma.event.findUnique({ where: { id } });
+    if (!event) return notFound('Event not found.');
+    if (event.status !== 'published')
+      return invalid('Only published events can be unpublished.');
+
+    const updated = await this.prisma.event.update({
+      where: { id },
+      data: { status: 'draft' },
+      include: {
+        occurrences: { orderBy: { startTime: 'asc' } },
+        _count: { select: { registrations: true, interests: true } },
+      },
+    });
+
+    return success(this.toEventDto(updated));
+  }
+
   async cancel(id: number): Promise<ServiceResult<EventDto>> {
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) return notFound('Event not found.');

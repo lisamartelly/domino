@@ -153,6 +153,17 @@ export class EventsController {
     return sendResult(res, result);
   }
 
+  @Patch(':id/unpublish')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'SuperDuperAdmin')
+  async unpublish(
+    @Param('id', ParseIntPipe) id: number,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.service.unpublish(id);
+    return sendResult(res, result);
+  }
+
   @Patch(':id/cancel')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('Admin', 'SuperDuperAdmin')
