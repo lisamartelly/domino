@@ -10,6 +10,7 @@ import { MatchesModule } from './matches/matches.module';
 import { StripeModule } from './stripe/stripe.module';
 import { EventsModule } from './events/events.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { NewsletterModule } from './newsletter/newsletter.module';
     MatchesModule,
     EventsModule,
     NewsletterModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}

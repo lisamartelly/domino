@@ -459,6 +459,18 @@ model EventInterest {
 }
 
 // ============================================================
+// App Settings
+// ============================================================
+
+model AppSetting {
+  key       String   @id @db.VarChar(100)
+  value     String   @db.VarChar(2000)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("app_settings")
+}
+
+// ============================================================
 // Newsletter
 // ============================================================
 

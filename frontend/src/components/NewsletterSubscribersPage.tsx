@@ -4,11 +4,55 @@ import {
   type NewsletterSubscriberDto,
 } from "../services/api";
 
+function CopyButton({
+  label,
+  count,
+  isCopied,
+  onClick,
+  variant = "solid",
+}: {
+  label: string;
+  count: number;
+  isCopied: boolean;
+  onClick: () => void;
+  variant?: "solid" | "outline";
+}) {
+  const base =
+    variant === "solid"
+      ? "bg-primary-500 hover:bg-primary-600 text-white"
+      : "bg-white border border-charcoal-200 text-charcoal-700 hover:bg-charcoal-50";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${base} font-semibold py-2 px-3 rounded-lg text-sm transition-colors flex items-center gap-1.5`}
+    >
+      {isCopied ? (
+        <>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          Copied!
+        </>
+      ) : (
+        <>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          {label} ({count})
+        </>
+      )}
+    </button>
+  );
+}
+
+type CopiedKey = "all" | "newsletter" | "matchmaking" | null;
+
 export function NewsletterSubscribersPage() {
   const [subscribers, setSubscribers] = useState<NewsletterSubscriberDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<CopiedKey>(null);
 
   useEffect(() => {
     getNewsletterSubscribers()
@@ -17,11 +61,14 @@ export function NewsletterSubscribersPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleCopy = async () => {
-    const emails = subscribers.map((s) => s.email).join("\n");
+  const newsletterOnly = subscribers.filter((s) => s.source !== "matchmaking");
+  const matchmakingOnly = subscribers.filter((s) => s.source === "matchmaking");
+
+  const handleCopy = async (key: CopiedKey, list: NewsletterSubscriberDto[]) => {
+    const emails = list.map((s) => s.email).join("\n");
     await navigator.clipboard.writeText(emails);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
   };
 
   return (
@@ -38,27 +85,32 @@ export function NewsletterSubscribersPage() {
           )}
         </div>
         {subscribers.length > 0 && (
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="bg-primary-500 hover:bg-primary-600 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors flex items-center gap-2"
-          >
-            {copied ? (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                Copied!
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                Copy all emails
-              </>
+          <div className="flex gap-2 flex-wrap justify-end">
+            <CopyButton
+              label="Copy all"
+              count={subscribers.length}
+              isCopied={copied === "all"}
+              onClick={() => handleCopy("all", subscribers)}
+            />
+            {newsletterOnly.length > 0 && (
+              <CopyButton
+                label="Newsletter only"
+                count={newsletterOnly.length}
+                isCopied={copied === "newsletter"}
+                onClick={() => handleCopy("newsletter", newsletterOnly)}
+                variant="outline"
+              />
             )}
-          </button>
+            {matchmakingOnly.length > 0 && (
+              <CopyButton
+                label="Matchmaking only"
+                count={matchmakingOnly.length}
+                isCopied={copied === "matchmaking"}
+                onClick={() => handleCopy("matchmaking", matchmakingOnly)}
+                variant="outline"
+              />
+            )}
+          </div>
         )}
       </header>
 

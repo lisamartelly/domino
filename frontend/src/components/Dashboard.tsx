@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useAppSettings } from "../contexts/AppSettingsContext";
 import {
   getMyMatches,
   getEvents,
@@ -62,9 +63,12 @@ function timeLeft(createdAt: string): string {
 
 export function Dashboard() {
   const { user } = useAuth();
+  const { registrationEnabled, registrationLoaded, setRegistrationEnabled } =
+    useAppSettings();
   const [matches, setMatches] = useState<MatchSummaryDto[]>([]);
   const [events, setEvents] = useState<EventSummaryDto[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(true);
+  const [togglingRegistration, setTogglingRegistration] = useState(false);
 
   const isAdmin =
     user?.roles?.includes("Admin") ||
@@ -95,6 +99,17 @@ export function Dashboard() {
       .then((data) => setEvents(data.slice(0, 3)))
       .catch(() => {});
   }, [isAdmin]);
+
+  const handleToggleRegistration = async () => {
+    setTogglingRegistration(true);
+    try {
+      await setRegistrationEnabled(!registrationEnabled);
+    } catch {
+      // ignore
+    } finally {
+      setTogglingRegistration(false);
+    }
+  };
 
   const hasCompletedIntake = user?.hasCompletedIntake ?? true;
   const pendingMatches = matches.filter((m) => m.status === "pending");
@@ -134,41 +149,74 @@ export function Dashboard() {
 
       {/* Admin Links */}
       {isAdmin && (
-        <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
-          <Link
-            to="/match"
-            className="rounded-2xl border-l-4 border-l-primary-500 border border-charcoal-200 bg-white p-5 shadow-sm hover:shadow-md transition-all group"
-          >
-            <p className="font-semibold text-primary-600 group-hover:text-primary-700">
-              Matching
-            </p>
-            <p className="text-sm text-charcoal-500 mt-1">
-              Create new matches between members.
-            </p>
-          </Link>
-          <Link
-            to="/activity-ideas"
-            className="rounded-2xl border-l-4 border-l-primary-500 border border-charcoal-200 bg-white p-5 shadow-sm hover:shadow-md transition-all group"
-          >
-            <p className="font-semibold text-primary-600 group-hover:text-primary-700">
-              Activity Ideas
-            </p>
-            <p className="text-sm text-charcoal-500 mt-1">
-              Manage the catalog of date ideas.
-            </p>
-          </Link>
-          <Link
-            to="/events/manage"
-            className="rounded-2xl border-l-4 border-l-primary-500 border border-charcoal-200 bg-white p-5 shadow-sm hover:shadow-md transition-all group"
-          >
-            <p className="font-semibold text-primary-600 group-hover:text-primary-700">
-              Manage Events
-            </p>
-            <p className="text-sm text-charcoal-500 mt-1">
-              Create and manage upcoming events.
-            </p>
-          </Link>
-        </section>
+        <>
+          <section className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+            <Link
+              to="/match"
+              className="rounded-2xl border-l-4 border-l-primary-500 border border-charcoal-200 bg-white p-5 shadow-sm hover:shadow-md transition-all group"
+            >
+              <p className="font-semibold text-primary-600 group-hover:text-primary-700">
+                Matching
+              </p>
+              <p className="text-sm text-charcoal-500 mt-1">
+                Create new matches between members.
+              </p>
+            </Link>
+            <Link
+              to="/activity-ideas"
+              className="rounded-2xl border-l-4 border-l-primary-500 border border-charcoal-200 bg-white p-5 shadow-sm hover:shadow-md transition-all group"
+            >
+              <p className="font-semibold text-primary-600 group-hover:text-primary-700">
+                Activity Ideas
+              </p>
+              <p className="text-sm text-charcoal-500 mt-1">
+                Manage the catalog of date ideas.
+              </p>
+            </Link>
+            <Link
+              to="/events/manage"
+              className="rounded-2xl border-l-4 border-l-primary-500 border border-charcoal-200 bg-white p-5 shadow-sm hover:shadow-md transition-all group"
+            >
+              <p className="font-semibold text-primary-600 group-hover:text-primary-700">
+                Manage Events
+              </p>
+              <p className="text-sm text-charcoal-500 mt-1">
+                Create and manage upcoming events.
+              </p>
+            </Link>
+          </section>
+
+          {registrationLoaded && (
+            <div className="rounded-2xl border border-charcoal-200 bg-white p-5 shadow-sm mb-10 flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-charcoal-900">
+                  Account Registration
+                </p>
+                <p className="text-sm text-charcoal-500 mt-0.5">
+                  {registrationEnabled
+                    ? "New users can create accounts."
+                    : "Registration is closed. No new accounts can be created."}
+                </p>
+              </div>
+              <button
+                onClick={handleToggleRegistration}
+                disabled={togglingRegistration}
+                className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:opacity-50 ${
+                  registrationEnabled ? "bg-green-500" : "bg-charcoal-300"
+                }`}
+                role="switch"
+                aria-checked={registrationEnabled}
+                aria-label="Toggle account registration"
+              >
+                <span
+                  className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    registrationEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Matches Section — regular users */}

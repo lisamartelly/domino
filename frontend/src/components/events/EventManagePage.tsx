@@ -7,7 +7,9 @@ import {
   unpublishEvent,
   cancelEvent,
   setEventFeatured,
+  getEventInterests,
   type EventSummaryDto,
+  type EventInterestDto,
   type CreateEventRequest,
   type UpdateEventRequest,
 } from "../../services/api";
@@ -51,6 +53,107 @@ const emptyForm: CreateEventRequest & { phase: string } = {
   anticipatedPriceRange: "",
 };
 
+function EventInterestPanel({ eventId }: { eventId: number }) {
+  const [interests, setInterests] = useState<EventInterestDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    getEventInterests(eventId)
+      .then(setInterests)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [eventId]);
+
+  const handleCopy = async () => {
+    const emails = interests.map((i) => i.email).join("\n");
+    await navigator.clipboard.writeText(emails);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (loading) {
+    return <div className="text-charcoal-400 text-sm py-4 text-center">Loading interests...</div>;
+  }
+
+  if (error) {
+    return <div className="text-primary-700 text-sm py-2">{error}</div>;
+  }
+
+  if (interests.length === 0) {
+    return <div className="text-charcoal-400 text-sm py-4 text-center">No one has expressed interest yet.</div>;
+  }
+
+  return (
+    <div className="mt-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium text-charcoal-700">
+          {interests.length} interested
+        </p>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="text-xs font-medium px-3 py-1.5 rounded-lg bg-primary-500 hover:bg-primary-600 text-white transition-colors flex items-center gap-1.5"
+        >
+          {copied ? (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              Copied!
+            </>
+          ) : (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Copy emails
+            </>
+          )}
+        </button>
+      </div>
+      <div className="rounded-xl border border-charcoal-100 bg-charcoal-50/50 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-charcoal-100">
+              <th className="text-left font-semibold text-charcoal-600 px-4 py-2">Email</th>
+              <th className="text-left font-semibold text-charcoal-600 px-4 py-2">Open to Romance</th>
+              <th className="text-left font-semibold text-charcoal-600 px-4 py-2">About</th>
+              <th className="text-left font-semibold text-charcoal-600 px-4 py-2">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {interests.map((interest) => (
+              <tr key={interest.id} className="border-b border-charcoal-100 last:border-b-0">
+                <td className="px-4 py-2 text-charcoal-900">{interest.email}</td>
+                <td className="px-4 py-2">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    interest.openToRomance
+                      ? "bg-accent2-100 text-accent2-700"
+                      : "bg-charcoal-100 text-charcoal-500"
+                  }`}>
+                    {interest.openToRomance ? "Yes" : "No"}
+                  </span>
+                </td>
+                <td className="px-4 py-2 text-charcoal-600 max-w-[200px] truncate" title={interest.aboutMe}>
+                  {interest.aboutMe}
+                </td>
+                <td className="px-4 py-2 text-charcoal-500 whitespace-nowrap">
+                  {new Date(interest.createdAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export function EventManagePage() {
   const [events, setEvents] = useState<EventSummaryDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,9 +161,22 @@ export function EventManagePage() {
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [expandedInterests, setExpandedInterests] = useState<Set<number>>(new Set());
   const [form, setForm] = useState<CreateEventRequest & { capacity?: number; phase: string }>(
     { ...emptyForm }
   );
+
+  const toggleInterests = (eventId: number) => {
+    setExpandedInterests((prev) => {
+      const next = new Set(prev);
+      if (next.has(eventId)) {
+        next.delete(eventId);
+      } else {
+        next.add(eventId);
+      }
+      return next;
+    });
+  };
 
   const loadEvents = () => {
     setLoading(true);
@@ -543,8 +659,24 @@ export function EventManagePage() {
                       Cancel
                     </button>
                   )}
+                  {event.interestCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => toggleInterests(event.id)}
+                      className={`text-xs font-medium px-2 py-1 rounded-lg transition-colors ${
+                        expandedInterests.has(event.id)
+                          ? "bg-accent2-100 text-accent2-700"
+                          : "bg-charcoal-50 text-charcoal-600 hover:bg-charcoal-100"
+                      }`}
+                    >
+                      {expandedInterests.has(event.id) ? "Hide Interests" : `View Interests (${event.interestCount})`}
+                    </button>
+                  )}
                 </div>
               </div>
+              {expandedInterests.has(event.id) && (
+                <EventInterestPanel eventId={event.id} />
+              )}
             </div>
           ))}
           {events.length === 0 && (

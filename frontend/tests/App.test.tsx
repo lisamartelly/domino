@@ -7,6 +7,8 @@ vi.mock("../src/services/api", () => ({
   getCurrentUser: vi.fn().mockRejectedValue(new Error("Not authenticated")),
   loginUser: vi.fn(),
   logoutUser: vi.fn(),
+  getRegistrationStatus: vi.fn().mockResolvedValue({ registrationEnabled: true }),
+  setRegistrationStatus: vi.fn(),
 }));
 
 vi.mock("../src/components/LandingPage", () => ({
