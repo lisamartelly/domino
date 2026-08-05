@@ -55,7 +55,7 @@ export function NewsletterSignup() {
         <button
           type="submit"
           disabled={submitting}
-          className="bg-accent1-500 hover:bg-accent1-600 text-charcoal-950 font-bold py-3 px-6 rounded-xl transition-colors whitespace-nowrap disabled:opacity-60"
+          className="bg-accent1-500 hover:bg-accent1-600 text-white font-bold py-3 px-6 rounded-xl transition-colors whitespace-nowrap disabled:opacity-60"
         >
           {submitting ? "Signing up…" : "Sign me up!"}
         </button>

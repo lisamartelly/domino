@@ -38,14 +38,14 @@ export function PublicLayout({
   return (
     <div className="min-h-screen flex flex-col bg-primary-500">
       {/* ── Nav bar ── */}
-      <header className="bg-charcoal-950 sticky top-0 z-50">
+      <header className="bg-charcoal-500 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           {/* Logo */}
           <Link to="/" className="shrink-0">
             <img
-              src="/images/logos/DSC_Secondary_Cream.png"
+              src="/images/logos/DSC_Wordmark_Horizontal_Sedona.png"
               alt="Domino Social Club"
-              className="h-8"
+              className="h-7"
             />
           </Link>
 
@@ -59,18 +59,11 @@ export function PublicLayout({
             {isAuthenticated ? (
               <Link
                 to="/dashboard"
-                className="text-sm bg-accent1-500 hover:bg-accent1-600 text-charcoal-950 font-bold py-2 px-5 rounded-xl transition-colors"
+                className="text-sm bg-accent1-500 hover:bg-accent1-600 text-white font-bold py-2 px-5 rounded-xl transition-colors"
               >
                 Dashboard
               </Link>
-            ) : (
-              <Link
-                to="/login"
-                className="text-sm bg-accent1-500 hover:bg-accent1-600 text-charcoal-950 font-bold py-2 px-5 rounded-xl transition-colors"
-              >
-                Sign in
-              </Link>
-            )}
+            ) : null}
           </nav>
 
           {/* Mobile hamburger */}
@@ -94,7 +87,7 @@ export function PublicLayout({
 
         {/* Mobile dropdown */}
         {mobileOpen && (
-          <nav className="md:hidden bg-charcoal-900 border-t border-charcoal-800 px-6 py-4 space-y-3">
+          <nav className="md:hidden bg-charcoal-600 border-t border-charcoal-400/30 px-6 py-4 space-y-3">
             {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.to}
@@ -111,18 +104,11 @@ export function PublicLayout({
             {isAuthenticated ? (
               <Link
                 to="/dashboard"
-                className="block text-sm text-cream-100 hover:text-white font-medium transition-colors"
+                className="block text-sm text-cream-100 hover:text-white font-bold transition-colors"
               >
                 Dashboard
               </Link>
-            ) : (
-              <Link
-                to="/login"
-                className="block text-sm text-cream-100 hover:text-white font-medium transition-colors"
-              >
-                Sign in
-              </Link>
-            )}
+            ) : null}
           </nav>
         )}
       </header>

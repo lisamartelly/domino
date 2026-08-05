@@ -54,7 +54,7 @@ function EventCard({ event }: { event: EventSummaryDto }) {
         <span
           className={`absolute top-2 left-2 rounded-lg px-2 py-0.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider ${
             isRecurring
-              ? "bg-accent1-500 text-charcoal-950"
+              ? "bg-accent1-500 text-white"
               : "bg-cream-50 text-charcoal-700"
           }`}
         >
