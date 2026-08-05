@@ -4,6 +4,7 @@ import {
   createEvent,
   publishEvent,
   cancelEvent,
+  setEventFeatured,
   type EventSummaryDto,
   type CreateEventRequest,
 } from "../../services/api";
@@ -34,7 +35,7 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-primary-100 text-primary-700",
 };
 
-const emptyForm: CreateEventRequest = {
+const emptyForm: CreateEventRequest & { phase: string } = {
   name: "",
   description: "",
   location: "",
@@ -43,6 +44,8 @@ const emptyForm: CreateEventRequest = {
   startTime: "",
   frequencyType: "ONCE",
   frequencyCount: 1,
+  phase: "scheduled",
+  anticipatedPriceRange: "",
 };
 
 export function EventManagePage() {
@@ -51,7 +54,7 @@ export function EventManagePage() {
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<CreateEventRequest & { capacity?: number }>(
+  const [form, setForm] = useState<CreateEventRequest & { capacity?: number; phase: string }>(
     { ...emptyForm }
   );
 
@@ -78,17 +81,20 @@ export function EventManagePage() {
     setSaving(true);
     setError(null);
     try {
+      const isGathering = form.phase === "gathering";
       await createEvent({
         name: form.name,
         description: form.description,
         location: form.location,
         costCents: form.costCents,
         capacity: form.capacity || undefined,
-        startTime: new Date(form.startTime).toISOString(),
+        startTime: isGathering ? undefined : new Date(form.startTime!).toISOString(),
         durationMinutes: form.durationMinutes,
         frequencyType: form.frequencyType,
         frequencyCount:
           form.frequencyType === "ONCE" ? 1 : form.frequencyCount ?? 1,
+        phase: form.phase,
+        anticipatedPriceRange: form.anticipatedPriceRange || undefined,
       });
       resetForm();
       loadEvents();
@@ -112,6 +118,15 @@ export function EventManagePage() {
     if (!window.confirm("Cancel this event? This cannot be undone.")) return;
     try {
       await cancelEvent(id);
+      loadEvents();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleToggleFeatured = async (id: number, currentlyFeatured: boolean) => {
+    try {
+      await setEventFeatured(id, !currentlyFeatured);
       loadEvents();
     } catch (err: any) {
       setError(err.message);
@@ -154,6 +169,34 @@ export function EventManagePage() {
           </h2>
 
           <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-charcoal-700 mb-1">
+                Event Type
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="phase"
+                    checked={form.phase === "scheduled"}
+                    onChange={() => setForm({ ...form, phase: "scheduled" })}
+                    className="w-4 h-4 accent-accent1-500"
+                  />
+                  <span className="text-sm text-charcoal-700">Scheduled (has a date)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="phase"
+                    checked={form.phase === "gathering"}
+                    onChange={() => setForm({ ...form, phase: "gathering" })}
+                    className="w-4 h-4 accent-accent1-500"
+                  />
+                  <span className="text-sm text-charcoal-700">Gathering interest (no date yet)</span>
+                </label>
+              </div>
+            </div>
+
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-charcoal-700 mb-1">
                 Name
@@ -216,20 +259,39 @@ export function EventManagePage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-charcoal-700 mb-1">
-                Start Date & Time
-              </label>
-              <input
-                type="datetime-local"
-                value={form.startTime}
-                onChange={(e) =>
-                  setForm({ ...form, startTime: e.target.value })
-                }
-                required
-                className="w-full rounded-lg border border-charcoal-200 p-2.5 text-sm text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-accent1-500"
-              />
-            </div>
+            {form.phase === "gathering" && (
+              <div>
+                <label className="block text-sm font-medium text-charcoal-700 mb-1">
+                  Anticipated Price Range
+                </label>
+                <input
+                  value={form.anticipatedPriceRange || ""}
+                  onChange={(e) =>
+                    setForm({ ...form, anticipatedPriceRange: e.target.value })
+                  }
+                  maxLength={100}
+                  placeholder='e.g. "$20-$40", "Free", "~$15"'
+                  className="w-full rounded-lg border border-charcoal-200 p-2.5 text-sm text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-accent1-500"
+                />
+              </div>
+            )}
+
+            {form.phase === "scheduled" && (
+              <div>
+                <label className="block text-sm font-medium text-charcoal-700 mb-1">
+                  Start Date & Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={form.startTime}
+                  onChange={(e) =>
+                    setForm({ ...form, startTime: e.target.value })
+                  }
+                  required
+                  className="w-full rounded-lg border border-charcoal-200 p-2.5 text-sm text-charcoal-900 focus:outline-none focus:ring-2 focus:ring-accent1-500"
+                />
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-charcoal-700 mb-1">
@@ -353,7 +415,7 @@ export function EventManagePage() {
                     </span>
                   </div>
                   <p className="text-sm text-charcoal-500 mt-1">
-                    {formatDate(event.startTime)} &middot; {event.location}{" "}
+                    {event.startTime ? formatDate(event.startTime) : "TBD"} &middot; {event.location}{" "}
                     &middot; {formatCost(event.costCents)}
                     {event.frequencyType !== "ONCE" &&
                       ` \u00B7 ${
@@ -361,11 +423,36 @@ export function EventManagePage() {
                       } (${event.frequencyCount}x)`}
                   </p>
                   <p className="text-xs text-charcoal-400 mt-1">
-                    {event.registrationCount} registered
-                    {event.capacity !== null && ` / ${event.capacity} capacity`}
+                    {event.phase === "gathering" ? (
+                      <>{event.interestCount} interested</>
+                    ) : (
+                      <>
+                        {event.registrationCount} registered
+                        {event.capacity !== null && ` / ${event.capacity} capacity`}
+                      </>
+                    )}
+                    {event.phase === "gathering" && (
+                      <span className="ml-2 text-accent1-600 font-medium">
+                        · Gathering Interest
+                      </span>
+                    )}
                   </p>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex gap-2 shrink-0 items-center">
+                  {event.status === "published" && (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFeatured(event.id, event.featuredOnHomepage)}
+                      className={`text-xs font-medium px-2 py-1 rounded-lg transition-colors ${
+                        event.featuredOnHomepage
+                          ? "bg-accent1-100 text-accent1-700 hover:bg-accent1-200"
+                          : "bg-charcoal-50 text-charcoal-500 hover:bg-charcoal-100"
+                      }`}
+                      title={event.featuredOnHomepage ? "Remove from homepage" : "Feature on homepage"}
+                    >
+                      {event.featuredOnHomepage ? "★ Featured" : "☆ Feature"}
+                    </button>
+                  )}
                   {event.status === "draft" && (
                     <button
                       type="button"

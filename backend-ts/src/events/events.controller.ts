@@ -15,7 +15,11 @@ import {
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { EventsService } from './events.service';
-import { CreateEventRequest, UpdateEventRequest } from './dto/event.dto';
+import {
+  CreateEventRequest,
+  UpdateEventRequest,
+  SubmitEventInterestRequest,
+} from './dto/event.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -36,6 +40,11 @@ export class EventsController {
 
   // Static paths MUST come before :id to avoid being swallowed by the param route
 
+  @Get('featured')
+  async listFeatured() {
+    return this.service.listFeatured();
+  }
+
   @Get('my-registrations')
   @UseGuards(JwtAuthGuard)
   async myRegistrations(@CurrentUser() user: AuthenticatedUser) {
@@ -55,6 +64,32 @@ export class EventsController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.service.getById(id);
+    return sendResult(res, result);
+  }
+
+  // ── Interest sign-up (public, no auth) ──
+
+  @Post(':id/interest')
+  @HttpCode(HttpStatus.OK)
+  async submitInterest(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: SubmitEventInterestRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.service.submitInterest(id, body);
+    return sendResult(res, result);
+  }
+
+  // ── Interest list (admin only) ──
+
+  @Get(':id/interests')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'SuperDuperAdmin')
+  async getInterests(
+    @Param('id', ParseIntPipe) id: number,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.service.getInterests(id);
     return sendResult(res, result);
   }
 
@@ -126,6 +161,18 @@ export class EventsController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.service.cancel(id);
+    return sendResult(res, result);
+  }
+
+  @Patch(':id/feature')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'SuperDuperAdmin')
+  async setFeatured(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { featured: boolean },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.service.setFeatured(id, body.featured);
     return sendResult(res, result);
   }
 }

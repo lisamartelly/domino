@@ -8,6 +8,7 @@ import type {
   EventSummaryDto,
   EventOccurrenceDto,
   EventRegistrationDto,
+  EventInterestDto,
   RegisterEventResponseDto,
 } from './dto/event.dto';
 
@@ -62,21 +63,23 @@ export class EventsService {
       location: string;
       costCents: number;
       capacity?: number;
-      startTime: string;
+      startTime?: string;
       durationMinutes: number;
       frequencyType: string;
       frequencyCount?: number;
+      phase?: string;
+      anticipatedPriceRange?: string;
     },
     createdByUserId: number,
   ): Promise<EventDto> {
     const count = data.frequencyCount ?? 1;
-    const start = new Date(data.startTime);
-    const occurrences = generateOccurrences(
-      start,
-      data.durationMinutes,
-      data.frequencyType,
-      count,
-    );
+    const phase = data.phase ?? 'scheduled';
+    const start = data.startTime ? new Date(data.startTime) : null;
+
+    const occurrences =
+      start
+        ? generateOccurrences(start, data.durationMinutes, data.frequencyType, count)
+        : [];
 
     const event = await this.prisma.event.create({
       data: {
@@ -90,6 +93,8 @@ export class EventsService {
         frequencyType: data.frequencyType,
         frequencyCount: count,
         status: 'draft',
+        phase,
+        anticipatedPriceRange: data.anticipatedPriceRange ?? null,
         createdByUserId,
         occurrences: {
           create: occurrences.map((o) => ({
@@ -100,7 +105,7 @@ export class EventsService {
       },
       include: {
         occurrences: { orderBy: { startTime: 'asc' } },
-        _count: { select: { registrations: true } },
+        _count: { select: { registrations: true, interests: true } },
       },
     });
 
@@ -119,6 +124,8 @@ export class EventsService {
       durationMinutes?: number;
       frequencyType?: string;
       frequencyCount?: number;
+      phase?: string;
+      anticipatedPriceRange?: string;
     },
   ): Promise<ServiceResult<EventDto>> {
     const existing = await this.prisma.event.findUnique({ where: { id } });
@@ -150,6 +157,9 @@ export class EventsService {
       updateData.frequencyType = data.frequencyType;
     if (data.frequencyCount !== undefined)
       updateData.frequencyCount = data.frequencyCount;
+    if (data.phase !== undefined) updateData.phase = data.phase;
+    if (data.anticipatedPriceRange !== undefined)
+      updateData.anticipatedPriceRange = data.anticipatedPriceRange;
 
     if (needsOccurrenceRegen) {
       const startTime = data.startTime
@@ -161,19 +171,21 @@ export class EventsService {
 
       await this.prisma.eventOccurrence.deleteMany({ where: { eventId: id } });
 
-      const occurrences = generateOccurrences(
-        startTime,
-        duration,
-        freqType,
-        freqCount,
-      );
-      await this.prisma.eventOccurrence.createMany({
-        data: occurrences.map((o) => ({
-          eventId: id,
-          startTime: o.startTime,
-          endTime: o.endTime,
-        })),
-      });
+      if (startTime) {
+        const occurrences = generateOccurrences(
+          startTime,
+          duration,
+          freqType,
+          freqCount,
+        );
+        await this.prisma.eventOccurrence.createMany({
+          data: occurrences.map((o) => ({
+            eventId: id,
+            startTime: o.startTime,
+            endTime: o.endTime,
+          })),
+        });
+      }
     }
 
     const updated = await this.prisma.event.update({
@@ -181,7 +193,7 @@ export class EventsService {
       data: updateData,
       include: {
         occurrences: { orderBy: { startTime: 'asc' } },
-        _count: { select: { registrations: true } },
+        _count: { select: { registrations: true, interests: true } },
       },
     });
 
@@ -201,7 +213,7 @@ export class EventsService {
       data: { status: 'published' },
       include: {
         occurrences: { orderBy: { startTime: 'asc' } },
-        _count: { select: { registrations: true } },
+        _count: { select: { registrations: true, interests: true } },
       },
     });
 
@@ -219,7 +231,7 @@ export class EventsService {
       data: { status: 'cancelled' },
       include: {
         occurrences: { orderBy: { startTime: 'asc' } },
-        _count: { select: { registrations: true } },
+        _count: { select: { registrations: true, interests: true } },
       },
     });
 
@@ -228,30 +240,73 @@ export class EventsService {
 
   async listAll(): Promise<EventSummaryDto[]> {
     const events = await this.prisma.event.findMany({
-      orderBy: { startTime: 'desc' },
-      include: { _count: { select: { registrations: true } } },
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { registrations: true, interests: true } } },
     });
 
     return events.map((e) => this.toSummaryDto(e));
   }
 
+  async setFeatured(
+    id: number,
+    featured: boolean,
+  ): Promise<ServiceResult<EventDto>> {
+    const event = await this.prisma.event.findUnique({ where: { id } });
+    if (!event) return notFound('Event not found.');
+
+    const updated = await this.prisma.event.update({
+      where: { id },
+      data: { featuredOnHomepage: featured },
+      include: {
+        occurrences: { orderBy: { startTime: 'asc' } },
+        _count: { select: { registrations: true, interests: true } },
+      },
+    });
+
+    return success(this.toEventDto(updated));
+  }
+
   // ── User-facing endpoints ──
+
+  async listFeatured(): Promise<EventSummaryDto[]> {
+    const featured = await this.prisma.event.findMany({
+      where: {
+        status: 'published',
+        featuredOnHomepage: true,
+      },
+      orderBy: { createdAt: 'asc' },
+      include: { _count: { select: { registrations: true, interests: true } } },
+    });
+
+    if (featured.length > 0) {
+      return featured.map((e) => this.toSummaryDto(e));
+    }
+
+    return this.listPublished();
+  }
 
   async listPublished(): Promise<EventSummaryDto[]> {
     const now = new Date();
     const events = await this.prisma.event.findMany({
       where: {
         status: 'published',
-        // Keep events that still have an upcoming (non-cancelled) occurrence
-        occurrences: {
-          some: {
-            startTime: { gte: now },
-            isCancelled: false,
+        OR: [
+          // Scheduled events with upcoming occurrences
+          {
+            phase: 'scheduled',
+            occurrences: {
+              some: {
+                startTime: { gte: now },
+                isCancelled: false,
+              },
+            },
           },
-        },
+          // Gathering-phase events (no date required)
+          { phase: 'gathering' },
+        ],
       },
-      orderBy: { startTime: 'asc' },
-      include: { _count: { select: { registrations: true } } },
+      orderBy: { createdAt: 'asc' },
+      include: { _count: { select: { registrations: true, interests: true } } },
     });
 
     return events.map((e) => this.toSummaryDto(e));
@@ -262,7 +317,7 @@ export class EventsService {
       where: { id },
       include: {
         occurrences: { orderBy: { startTime: 'asc' } },
-        _count: { select: { registrations: true } },
+        _count: { select: { registrations: true, interests: true } },
       },
     });
 
@@ -394,6 +449,54 @@ export class EventsService {
     }));
   }
 
+  // ── Interest sign-ups ──
+
+  async submitInterest(
+    eventId: number,
+    data: { email: string; openToRomance: boolean; aboutMe: string },
+  ): Promise<ServiceResult<{ submitted: boolean }>> {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) return notFound('Event not found.');
+    if (event.status !== 'published')
+      return invalid('Event is not accepting sign-ups.');
+    if (event.phase !== 'gathering')
+      return invalid('Event is not in the gathering interest phase.');
+
+    await this.prisma.eventInterest.upsert({
+      where: { eventId_email: { eventId, email: data.email } },
+      update: { openToRomance: data.openToRomance, aboutMe: data.aboutMe },
+      create: {
+        eventId,
+        email: data.email,
+        openToRomance: data.openToRomance,
+        aboutMe: data.aboutMe,
+      },
+    });
+
+    return success({ submitted: true });
+  }
+
+  async getInterests(eventId: number): Promise<ServiceResult<EventInterestDto[]>> {
+    const event = await this.prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) return notFound('Event not found.');
+
+    const interests = await this.prisma.eventInterest.findMany({
+      where: { eventId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return success(
+      interests.map((i) => ({
+        id: i.id,
+        eventId: i.eventId,
+        email: i.email,
+        openToRomance: i.openToRomance,
+        aboutMe: i.aboutMe,
+        createdAt: i.createdAt.toISOString(),
+      })),
+    );
+  }
+
   // ── Helpers ──
 
   private toEventDto(event: {
@@ -403,11 +506,15 @@ export class EventsService {
     location: string;
     costCents: number;
     capacity: number | null;
-    startTime: Date;
+    startTime: Date | null;
     durationMinutes: number;
     frequencyType: string;
     frequencyCount: number;
     status: string;
+    phase: string;
+    anticipatedPriceRange: string | null;
+    imageUrl: string | null;
+    featuredOnHomepage: boolean;
     createdAt: Date;
     occurrences: Array<{
       id: number;
@@ -415,7 +522,7 @@ export class EventsService {
       endTime: Date;
       isCancelled: boolean;
     }>;
-    _count: { registrations: number };
+    _count: { registrations: number; interests: number };
   }): EventDto {
     return {
       id: event.id,
@@ -424,12 +531,17 @@ export class EventsService {
       location: event.location,
       costCents: event.costCents,
       capacity: event.capacity,
-      startTime: event.startTime.toISOString(),
+      startTime: event.startTime?.toISOString() ?? null,
       durationMinutes: event.durationMinutes,
       frequencyType: event.frequencyType,
       frequencyCount: event.frequencyCount,
       status: event.status,
+      phase: event.phase,
+      anticipatedPriceRange: event.anticipatedPriceRange,
+      imageUrl: event.imageUrl,
+      featuredOnHomepage: event.featuredOnHomepage,
       registrationCount: event._count.registrations,
+      interestCount: event._count.interests,
       occurrences: event.occurrences.map((o): EventOccurrenceDto => ({
         id: o.id,
         startTime: o.startTime.toISOString(),
@@ -447,12 +559,16 @@ export class EventsService {
     location: string;
     costCents: number;
     capacity: number | null;
-    startTime: Date;
+    startTime: Date | null;
     durationMinutes: number;
     frequencyType: string;
     frequencyCount: number;
     status: string;
-    _count: { registrations: number };
+    phase: string;
+    anticipatedPriceRange: string | null;
+    imageUrl: string | null;
+    featuredOnHomepage: boolean;
+    _count: { registrations: number; interests: number };
   }): EventSummaryDto {
     return {
       id: event.id,
@@ -461,12 +577,17 @@ export class EventsService {
       location: event.location,
       costCents: event.costCents,
       capacity: event.capacity,
-      startTime: event.startTime.toISOString(),
+      startTime: event.startTime?.toISOString() ?? null,
       durationMinutes: event.durationMinutes,
       frequencyType: event.frequencyType,
       frequencyCount: event.frequencyCount,
       status: event.status,
+      phase: event.phase,
+      anticipatedPriceRange: event.anticipatedPriceRange,
+      imageUrl: event.imageUrl,
+      featuredOnHomepage: event.featuredOnHomepage,
       registrationCount: event._count.registrations,
+      interestCount: event._count.interests,
       spotsRemaining:
         event.capacity !== null
           ? Math.max(0, event.capacity - event._count.registrations)

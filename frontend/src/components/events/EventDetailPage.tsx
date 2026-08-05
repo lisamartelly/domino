@@ -9,6 +9,7 @@ import {
   type EventDto,
   type EventRegistrationDto,
 } from "../../services/api";
+import { EventInterestForm } from "./EventInterestForm";
 
 function formatCost(cents: number): string {
   if (cents === 0) return "Free";
@@ -122,6 +123,7 @@ export function EventDetailPage() {
     );
   }
 
+  const isGathering = event.phase === "gathering";
   const isFull =
     event.capacity !== null &&
     event.registrationCount >= event.capacity;
@@ -155,32 +157,36 @@ export function EventDetailPage() {
             <div className="flex items-start justify-between gap-4 mb-6">
               <div>
                 <p className="text-primary-500 font-bold text-[11px] tracking-[0.2em] uppercase mb-2">
-                  Event
+                  {isGathering ? "Gathering Interest" : "Event"}
                 </p>
                 <h1 className="text-2xl md:text-3xl font-bold text-charcoal-900">
                   {event.name}
                 </h1>
+                {isGathering ? null : (
+                  <span
+                    className={`inline-block mt-2 text-xs font-semibold px-2.5 py-0.5 rounded-full ${
+                      event.status === "published"
+                        ? "bg-green-100 text-green-800"
+                        : event.status === "cancelled"
+                        ? "bg-primary-100 text-primary-700"
+                        : "bg-charcoal-100 text-charcoal-600"
+                    }`}
+                  >
+                    {event.status}
+                  </span>
+                )}
+              </div>
+              {!isGathering && (
                 <span
-                  className={`inline-block mt-2 text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                    event.status === "published"
-                      ? "bg-green-100 text-green-800"
-                      : event.status === "cancelled"
-                      ? "bg-primary-100 text-primary-700"
-                      : "bg-charcoal-100 text-charcoal-600"
+                  className={`text-2xl font-bold shrink-0 ${
+                    event.costCents === 0
+                      ? "text-green-700"
+                      : "text-charcoal-900"
                   }`}
                 >
-                  {event.status}
+                  {formatCost(event.costCents)}
                 </span>
-              </div>
-              <span
-                className={`text-2xl font-bold shrink-0 ${
-                  event.costCents === 0
-                    ? "text-green-700"
-                    : "text-charcoal-900"
-                }`}
-              >
-                {formatCost(event.costCents)}
-              </span>
+              )}
             </div>
 
             {/* Description */}
@@ -189,45 +195,78 @@ export function EventDetailPage() {
             </p>
 
             {/* Info Grid */}
-            <div className="grid grid-cols-2 gap-5 text-sm mb-8">
-              <div className="rounded-xl bg-cream-50 p-4">
-                <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
-                  Location
-                </span>
-                <span className="text-charcoal-900 font-semibold">
-                  {event.location}
-                </span>
+            {isGathering ? (
+              <div className="grid grid-cols-2 gap-5 text-sm mb-8">
+                {event.location && (
+                  <div className="rounded-xl bg-cream-50 p-4">
+                    <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                      Location
+                    </span>
+                    <span className="text-charcoal-900 font-semibold">
+                      {event.location}
+                    </span>
+                  </div>
+                )}
+                <div className="rounded-xl bg-cream-50 p-4">
+                  <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                    Date
+                  </span>
+                  <span className="text-charcoal-900 font-semibold">
+                    TBD — based on interest
+                  </span>
+                </div>
+                {event.anticipatedPriceRange && (
+                  <div className="rounded-xl bg-cream-50 p-4">
+                    <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                      Est. Price
+                    </span>
+                    <span className="text-charcoal-900 font-semibold">
+                      {event.anticipatedPriceRange}
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="rounded-xl bg-cream-50 p-4">
-                <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
-                  Duration
-                </span>
-                <span className="text-charcoal-900 font-semibold">
-                  {event.durationMinutes} min
-                </span>
+            ) : (
+              <div className="grid grid-cols-2 gap-5 text-sm mb-8">
+                <div className="rounded-xl bg-cream-50 p-4">
+                  <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                    Location
+                  </span>
+                  <span className="text-charcoal-900 font-semibold">
+                    {event.location}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-cream-50 p-4">
+                  <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                    Duration
+                  </span>
+                  <span className="text-charcoal-900 font-semibold">
+                    {event.durationMinutes} min
+                  </span>
+                </div>
+                <div className="rounded-xl bg-cream-50 p-4">
+                  <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                    Schedule
+                  </span>
+                  <span className="text-charcoal-900 font-semibold">
+                    {frequencyLabels[event.frequencyType] ??
+                      event.frequencyType}
+                    {event.frequencyCount > 1 &&
+                      ` (${event.frequencyCount} sessions)`}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-cream-50 p-4">
+                  <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                    Spots
+                  </span>
+                  <span className="text-charcoal-900 font-semibold">
+                    {spotsRemaining !== null
+                      ? `${spotsRemaining} of ${event.capacity} remaining`
+                      : "Unlimited"}
+                  </span>
+                </div>
               </div>
-              <div className="rounded-xl bg-cream-50 p-4">
-                <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
-                  Schedule
-                </span>
-                <span className="text-charcoal-900 font-semibold">
-                  {frequencyLabels[event.frequencyType] ??
-                    event.frequencyType}
-                  {event.frequencyCount > 1 &&
-                    ` (${event.frequencyCount} sessions)`}
-                </span>
-              </div>
-              <div className="rounded-xl bg-cream-50 p-4">
-                <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
-                  Spots
-                </span>
-                <span className="text-charcoal-900 font-semibold">
-                  {spotsRemaining !== null
-                    ? `${spotsRemaining} of ${event.capacity} remaining`
-                    : "Unlimited"}
-                </span>
-              </div>
-            </div>
+            )}
 
             {/* Error */}
             {error && (
@@ -237,7 +276,17 @@ export function EventDetailPage() {
             )}
 
             {/* Actions */}
-            {event.status === "published" && (
+            {isGathering && event.status === "published" && (
+              <div>
+                <h2 className="text-lg font-bold text-charcoal-900">
+                  Sign up if you're interested!
+                </h2>
+                <p className=" mb-4">We'll email you when it's scheduled</p>
+                <EventInterestForm eventId={event.id} />
+              </div>
+            )}
+
+            {!isGathering && event.status === "published" && (
               <div>
                 {isRegistered ? (
                   <div className="flex items-center gap-4">
@@ -279,8 +328,8 @@ export function EventDetailPage() {
         </div>
       </div>
 
-      {/* Schedule */}
-      {event.occurrences.length > 0 && (
+      {/* Schedule (only for scheduled events) */}
+      {!isGathering && event.occurrences.length > 0 && (
         <div className="mt-8">
           <p className="text-primary-500 font-bold text-[11px] tracking-[0.2em] uppercase mb-2">
             Schedule

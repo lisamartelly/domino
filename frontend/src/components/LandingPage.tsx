@@ -1,11 +1,29 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { EventCardScroller } from "./events/EventCardScroller";
+import { getFeaturedEvents, type EventSummaryDto } from "../services/api";
 
 function scrollTo(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 }
 
 export function LandingPage() {
+  const [featuredEvents, setFeaturedEvents] = useState<EventSummaryDto[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    getFeaturedEvents()
+      .then((data) => {
+        if (!cancelled) setFeaturedEvents(data);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setEventsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <>
       {/* ── Hero ── */}
@@ -135,29 +153,31 @@ export function LandingPage() {
       </section>
 
       {/* ── Upcoming Events scroller ── */}
-      <section className="pb-16 md:pb-24 px-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-cream-50 border-4 border-accent1-500 rounded-3xl p-6 md:p-10">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-bold text-accent1-500">
-                Upcoming Events
-              </h2>
-              <p className="text-charcoal-700 mt-4 max-w-lg mx-auto leading-relaxed">
-                We design all of our events to be engaging and specific so you can find yourself among who you're looking for and actually get to know them.
-              </p>
-            </div>
-            <EventCardScroller />
-            <div className="text-center mt-8">
-              <Link
-                to="/events"
-                className="inline-block bg-accent1-500 hover:bg-accent1-600 text-white font-bold py-3 px-8 rounded-xl transition-colors text-sm tracking-wide uppercase"
-              >
-                View All Events
-              </Link>
+      {!eventsLoading && featuredEvents.length > 0 && (
+        <section className="pb-16 md:pb-24 px-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="bg-cream-50 border-4 border-accent1-500 rounded-3xl p-6 md:p-10">
+              <div className="text-center mb-10">
+                <h2 className="text-3xl md:text-4xl font-bold text-accent1-500">
+                  Upcoming Events
+                </h2>
+                <p className="text-charcoal-700 mt-4 max-w-lg mx-auto leading-relaxed">
+                  We design all of our events to be engaging and specific so you can find yourself among who you're looking for and actually get to know them.
+                </p>
+              </div>
+              <EventCardScroller events={featuredEvents} />
+              <div className="text-center mt-8">
+                <Link
+                  to="/events"
+                  className="inline-block bg-accent1-500 hover:bg-accent1-600 text-white font-bold py-3 px-8 rounded-xl transition-colors text-sm tracking-wide uppercase"
+                >
+                  View All Events
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </>
   );
 }

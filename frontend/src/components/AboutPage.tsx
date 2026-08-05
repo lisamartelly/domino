@@ -12,9 +12,9 @@ export function AboutPage() {
         {/* ── Mission ── */}
         <section className="bg-cream-50 border-4 border-accent1-500 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row gap-8 md:gap-12 items-center">
           <div className="w-full md:w-5/12 flex-shrink-0">
-            <div className="rounded-2xl overflow-hidden aspect-[4/5]">
+            <div className="rounded-2xl overflow-hidden aspect-[5/3]">
               <img
-                src="/images/about/happy-girls.jpg"
+                src="/images/about/IMG_2781.JPG"
                 alt="Happy friends together"
                 className="w-full h-full object-cover"
               />
@@ -26,21 +26,14 @@ export function AboutPage() {
             </h2>
             <div className="space-y-4 text-charcoal-700 leading-relaxed">
               <p>
-                Domino is here to help people find their people. Whether you're
-                looking for meaningful friendships, romantic partnership, or a
-                stronger sense of community, we're here to make connecting a
-                little easier.
+                Domino was created to help people find their people in an authentic, 
+                enjoyable way. That means no apps, no swiping! We think the best connections 
+                are made in real life and we want make those easier. 
+                
               </p>
               <p>
-                We know making the right connections can be hard, so we're here
-                to help. Tell us who you are, what you're looking for, and what
-                matters to you, and let us take it from there.
-              </p>
-              <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-                eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-                enim ad minim veniam, quis nostrud exercitation ullamco laboris
-                nisi ut aliquip ex ea commodo consequat.
+              Whether you're looking for meaningful friendships, romantic partnership, or a
+                stronger sense of community, we're here for you.
               </p>
             </div>
           </div>
@@ -49,9 +42,9 @@ export function AboutPage() {
         {/* ── Our Story ── */}
         <section className="bg-cream-50 border-4 border-accent1-500 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row-reverse gap-8 md:gap-12 items-center">
           <div className="w-full md:w-5/12 flex-shrink-0">
-            <div className="rounded-2xl overflow-hidden aspect-[4/5]">
+            <div className="rounded-2xl overflow-hidden aspect-[1/1]">
               <img
-                src="/images/about/plant-boys.jpg"
+                src="/images/about/1000000236.jpg"
                 alt="Friends with plants"
                 className="w-full h-full object-cover"
               />
@@ -63,22 +56,11 @@ export function AboutPage() {
             </h2>
             <div className="space-y-4 text-charcoal-700 leading-relaxed">
               <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam
-                auctor, nisl nec ultricies lacinia, nisl nisl aliquam nisl, nec
-                aliquam nisl nisl sit amet nisl. Donec auctor, nisl nec
-                ultricies lacinia.
+                Hi! We're Marissa and Lisa. We've been scheming together for 15 years (including planning entire parties just to invite 1 person) and we thought it was time to bring our skills to the masses.
               </p>
+              <p>After all this time, we have decades of experience in community building, individual and couples therapy, event planning, group facilitation, and, somehow, even more.</p>
               <p>
-                Duis aute irure dolor in reprehenderit in voluptate velit esse
-                cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat
-                cupidatat non proident, sunt in culpa qui officia deserunt
-                mollit anim id est laborum.
-              </p>
-              <p>
-                Sed ut perspiciatis unde omnis iste natus error sit voluptatem
-                accusantium doloremque laudantium, totam rem aperiam, eaque ipsa
-                quae ab illo inventore veritatis et quasi architecto beatae vitae
-                dicta sunt explicabo.
+                We are so excited to bring people together and can't wait to meet you!
               </p>
             </div>
           </div>
@@ -87,9 +69,9 @@ export function AboutPage() {
         {/* ── Values ── */}
         <section className="bg-cream-50 border-4 border-accent1-500 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row gap-8 md:gap-12 items-center">
           <div className="w-full md:w-5/12 flex-shrink-0">
-            <div className="rounded-2xl overflow-hidden aspect-[4/5]">
+            <div className="rounded-2xl overflow-hidden aspect-[5/3]">
               <img
-                src="/images/about/sparklers.jpg"
+                src="/images/about/dinner.png"
                 alt="Sparklers celebration"
                 className="w-full h-full object-cover"
               />
@@ -101,15 +83,10 @@ export function AboutPage() {
             </h2>
             <div className="space-y-4 text-charcoal-700 leading-relaxed">
               <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus
-                lacinia odio vitae vestibulum vestibulum. Cras venenatis euismod
-                malesuada. Nulla facilisi. Etiam non diam ante.
+                We want Domino to be warm, welcoming, and fun. We think everyone has something great to offer and we want to create spaces to allow meaningful connection to flourish.
               </p>
               <p>
-                Ut enim ad minim veniam, quis nostrud exercitation ullamco
-                laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure
-                dolor in reprehenderit in voluptate velit esse cillum dolore eu
-                fugiat nulla pariatur.
+                Meeting people has gotten too weird and hard. Let's course-correct and have fun together.
               </p>
             </div>
           </div>

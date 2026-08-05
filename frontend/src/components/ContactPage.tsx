@@ -59,23 +59,6 @@ export function ContactPage() {
           <p className="text-sm text-accent1-600 font-medium">@dominosocialclub</p>
         </a>
       </div>
-
-      {/* Newsletter section */}
-      <div className="bg-cream-50 rounded-3xl border-4 border-accent1-500 p-8 md:p-12">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-accent1-500 mb-4">
-            Join the Club
-          </h2>
-          <p className="text-charcoal-700 leading-relaxed max-w-lg mx-auto">
-            Be the first to hear about upcoming events, new experiences, and
-            opportunities to meet incredible people right here in the Twin
-            Cities.
-          </p>
-        </div>
-        <div className="max-w-md mx-auto">
-          <NewsletterSignup />
-        </div>
-      </div>
     </div>
   );
 }

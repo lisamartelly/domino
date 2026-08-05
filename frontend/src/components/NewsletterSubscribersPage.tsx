@@ -86,6 +86,9 @@ export function NewsletterSubscribersPage() {
                   Email
                 </th>
                 <th className="text-left font-semibold text-charcoal-600 px-5 py-3">
+                  Source
+                </th>
+                <th className="text-left font-semibold text-charcoal-600 px-5 py-3">
                   Subscribed
                 </th>
               </tr>
@@ -97,6 +100,11 @@ export function NewsletterSubscribersPage() {
                   className="border-b border-charcoal-100 last:border-b-0 hover:bg-cream-50/50 transition-colors"
                 >
                   <td className="px-5 py-3 text-charcoal-900">{sub.email}</td>
+                  <td className="px-5 py-3">
+                    <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${sub.source === "matchmaking" ? "bg-accent2-100 text-accent2-700" : "bg-accent1-100 text-accent1-700"}`}>
+                      {sub.source ?? "newsletter"}
+                    </span>
+                  </td>
                   <td className="px-5 py-3 text-charcoal-500">
                     {new Date(sub.subscribedAt).toLocaleDateString("en-US", {
                       month: "short",

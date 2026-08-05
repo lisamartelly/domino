@@ -1,4 +1,6 @@
+@import "trud-calendar/styles.css";
 @import "tailwindcss";
+@source "../node_modules/trud-calendar/dist";
 
 @font-face {
   font-family: "Peridot";
@@ -131,4 +133,24 @@ h1, h2, h3, h4, h5, h6 {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+:root {
+  --trc-background: #f8f4e9;
+  --trc-foreground: #3e3739;
+  --trc-muted: #f5f0e0;
+  --trc-muted-foreground: #948e91;
+  --trc-border: #efae1e40;
+  --trc-primary: #efae1e;
+  --trc-primary-foreground: #ffffff;
+  --trc-accent: #fefbf3;
+  --trc-accent-foreground: #3e3739;
+  --trc-card: #ffffff;
+  --trc-card-foreground: #3e3739;
+  --trc-ring: #efae1e;
+  --trc-radius: 0.75rem;
+  --trc-today-bg: #fefbf3;
+  --trc-today-text: #b4730d;
+  --trc-event-default: #efae1e;
+  --trc-current-time: #de623f;
 }
