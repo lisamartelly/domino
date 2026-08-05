@@ -103,6 +103,8 @@ export function EventCardScroller({ events: externalEvents }: EventCardScrollerP
   const [fetchedEvents, setFetchedEvents] = useState<EventSummaryDto[]>([]);
   const [loading, setLoading] = useState(!externalEvents);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     if (externalEvents) return;
@@ -121,6 +123,26 @@ export function EventCardScroller({ events: externalEvents }: EventCardScrollerP
   }, [externalEvents]);
 
   const events = externalEvents ?? fetchedEvents;
+
+  function updateScrollState() {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 1);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener("scroll", updateScrollState, { passive: true });
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateScrollState);
+      ro.disconnect();
+    };
+  }, [events]);
 
   function scroll(dir: "left" | "right") {
     const el = scrollRef.current;
@@ -142,31 +164,35 @@ export function EventCardScroller({ events: externalEvents }: EventCardScrollerP
   if (events.length === 0) return null;
 
   return (
-    <div className="relative group/scroller">
-      <button
-        type="button"
-        onClick={() => scroll("left")}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-9 h-9 rounded-full bg-cream-50 border-2 border-accent1-500 items-center justify-center hover:bg-accent1-50 transition-all opacity-0 group-hover/scroller:opacity-100 hidden md:flex"
-        aria-label="Scroll left"
-      >
-        <svg className="w-4 h-4 text-charcoal-700" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
-      <button
-        type="button"
-        onClick={() => scroll("right")}
-        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-9 h-9 rounded-full bg-cream-50 border-2 border-accent1-500 items-center justify-center hover:bg-accent1-50 transition-all opacity-0 group-hover/scroller:opacity-100 hidden md:flex"
-        aria-label="Scroll right"
-      >
-        <svg className="w-4 h-4 text-charcoal-700" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
+    <div className="relative">
+      {canScrollLeft && (
+        <button
+          type="button"
+          onClick={() => scroll("left")}
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-4 z-10 w-8 h-8 md:w-9 md:h-9 rounded-full bg-cream-50 border-2 border-accent1-500 flex items-center justify-center hover:bg-accent1-50 transition-colors shadow-md"
+          aria-label="Scroll left"
+        >
+          <svg className="w-4 h-4 text-charcoal-700" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+      {canScrollRight && (
+        <button
+          type="button"
+          onClick={() => scroll("right")}
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-4 z-10 w-8 h-8 md:w-9 md:h-9 rounded-full bg-cream-50 border-2 border-accent1-500 flex items-center justify-center hover:bg-accent1-50 transition-colors shadow-md"
+          aria-label="Scroll right"
+        >
+          <svg className="w-4 h-4 text-charcoal-700" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      )}
 
       <div
         ref={scrollRef}
-        className="grid grid-flow-col auto-cols-[calc((100%-0.5rem*2)/3)] md:auto-cols-[calc((100%-0.75rem*5)/6)] gap-2 md:gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory items-stretch"
+        className="grid grid-flow-col auto-cols-[calc((100%-0.5rem)/2)] md:auto-cols-[calc((100%-0.75rem*5)/6)] gap-2 md:gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory items-stretch"
       >
         {events.map((event, i) => (
           <div key={event.id} className="snap-start min-w-0 h-full">
