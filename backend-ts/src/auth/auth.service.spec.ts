@@ -1,5 +1,4 @@
 import * as bcrypt from 'bcrypt';
-import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { JwtService } from './jwt.service';
 import { RefreshTokenService } from './refresh-token.service';
@@ -10,7 +9,6 @@ describe('AuthService', () => {
   let prisma: jest.Mocked<PrismaService>;
   let jwtService: jest.Mocked<JwtService>;
   let refreshTokenService: jest.Mocked<RefreshTokenService>;
-  let configService: jest.Mocked<ConfigService>;
 
   beforeEach(() => {
     prisma = {
@@ -30,6 +28,9 @@ describe('AuthService', () => {
       surveyResponse: {
         findFirst: jest.fn(),
       },
+      appSetting: {
+        findUnique: jest.fn(),
+      },
     } as unknown as jest.Mocked<PrismaService>;
 
     jwtService = {
@@ -43,15 +44,10 @@ describe('AuthService', () => {
       revokeRefreshToken: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<RefreshTokenService>;
 
-    configService = {
-      get: jest.fn().mockReturnValue(undefined),
-    } as unknown as jest.Mocked<ConfigService>;
-
     authService = new AuthService(
       prisma,
       jwtService,
       refreshTokenService,
-      configService,
     );
   });
 
@@ -107,8 +103,11 @@ describe('AuthService', () => {
       expect(result.refreshCookieValue).toBe('');
     });
 
-    it('should reject registration when REGISTRATION_ENABLED is false', async () => {
-      configService.get.mockReturnValue('false');
+    it('should reject registration when registrationEnabled setting is false', async () => {
+      (prisma.appSetting.findUnique as jest.Mock).mockResolvedValue({
+        key: 'registrationEnabled',
+        value: 'false',
+      });
 
       const result = await authService.register(registerRequest);
 

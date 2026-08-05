@@ -745,6 +745,23 @@ export const getMyEventRegistrations = async (): Promise<
   return response.json();
 };
 
+export interface EventInterestDto {
+  id: number;
+  eventId: number;
+  email: string;
+  openToRomance: boolean;
+  aboutMe: string;
+  createdAt: string;
+}
+
+export const getEventInterests = async (
+  eventId: number
+): Promise<EventInterestDto[]> => {
+  const response = await fetchWithAuth(`/api/events/${eventId}/interests`);
+  if (!response.ok) throw new Error('Failed to fetch event interests');
+  return response.json();
+};
+
 export const submitEventInterest = async (
   eventId: number,
   data: SubmitEventInterestRequest
@@ -777,6 +794,27 @@ export const subscribeToNewsletter = async (
     body: JSON.stringify({ email, source }),
   });
   if (!response.ok) throw new Error("Failed to subscribe");
+  return response.json();
+};
+
+// ── Settings ──
+
+export const getRegistrationStatus = async (): Promise<{
+  registrationEnabled: boolean;
+}> => {
+  const response = await fetch('/api/settings/registration');
+  if (!response.ok) throw new Error('Failed to fetch registration status');
+  return response.json();
+};
+
+export const setRegistrationStatus = async (
+  enabled: boolean
+): Promise<{ registrationEnabled: boolean }> => {
+  const response = await fetchWithAuth('/api/settings/registration', {
+    method: 'PATCH',
+    body: JSON.stringify({ registrationEnabled: enabled }),
+  });
+  if (!response.ok) throw new Error('Failed to update registration status');
   return response.json();
 };
 

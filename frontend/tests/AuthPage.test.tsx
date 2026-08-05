@@ -17,8 +17,23 @@ vi.mock("../src/components/RegisterForm", () => ({
   ),
 }));
 
+vi.mock("../src/services/api", () => ({
+  getRegistrationStatus: vi.fn(),
+  setRegistrationStatus: vi.fn(),
+}));
+
+let mockRegistrationEnabled = true;
+
+vi.mock("../src/contexts/AppSettingsContext", () => ({
+  useAppSettings: () => ({
+    registrationEnabled: mockRegistrationEnabled,
+    registrationLoaded: true,
+    setRegistrationEnabled: vi.fn(),
+  }),
+  AppSettingsProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 function renderAuthPage(initialEntries = ["/login"]) {
-  // Dynamic import so the env override is picked up
   return import("../src/components/AuthPage").then(({ AuthPage }) =>
     render(
       <MemoryRouter initialEntries={initialEntries}>
@@ -32,12 +47,10 @@ describe("AuthPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
-    // Default: registration enabled
-    vi.stubEnv("VITE_REGISTRATION_ENABLED", "true");
+    mockRegistrationEnabled = true;
   });
 
   afterEach(() => {
-    vi.unstubAllEnvs();
     const events = ["switchToLogin", "switchToRegister"];
     events.forEach((eventType) => {
       const event = new CustomEvent(eventType);
@@ -57,7 +70,9 @@ describe("AuthPage", () => {
   it("renders register form when view=register query param is set", async () => {
     await renderAuthPage(["/login?view=register"]);
 
-    expect(screen.getByTestId("register-form-component")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("register-form-component")).toBeInTheDocument();
+    });
     expect(screen.queryByTestId("login-component")).not.toBeInTheDocument();
   });
 
@@ -131,7 +146,9 @@ describe("AuthPage", () => {
   it("switches to login view when switchToLogin event is dispatched", async () => {
     await renderAuthPage(["/login?view=register"]);
 
-    expect(screen.getByTestId("register-form-component")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId("register-form-component")).toBeInTheDocument();
+    });
 
     window.dispatchEvent(new CustomEvent("switchToLogin"));
 
@@ -185,7 +202,7 @@ describe("AuthPage", () => {
 
   describe("when registration is disabled", () => {
     beforeEach(() => {
-      vi.stubEnv("VITE_REGISTRATION_ENABLED", "false");
+      mockRegistrationEnabled = false;
     });
 
     it("always shows login and hides the toggle button", async () => {
@@ -211,7 +228,6 @@ describe("AuthPage", () => {
 
       window.dispatchEvent(new CustomEvent("switchToRegister"));
 
-      // Give it a tick to process
       await new Promise((r) => setTimeout(r, 50));
 
       expect(screen.getByTestId("login-component")).toBeInTheDocument();

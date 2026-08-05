@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from './jwt.service';
@@ -20,11 +19,13 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly refreshTokenService: RefreshTokenService,
-    private readonly configService: ConfigService,
   ) {}
 
   async register(request: RegisterRequest): Promise<AuthResult> {
-    if (this.configService.get('REGISTRATION_ENABLED') === 'false') {
+    const setting = await this.prisma.appSetting.findUnique({
+      where: { key: 'registrationEnabled' },
+    });
+    if (setting?.value === 'false') {
       return this.failedAuthResult('Registration is currently closed');
     }
 

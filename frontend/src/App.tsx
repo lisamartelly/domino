@@ -8,6 +8,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AppSettingsProvider } from "./contexts/AppSettingsContext";
 import { AuthPage } from "./components/AuthPage";
 import { LandingPage } from "./components/LandingPage";
 import { AboutPage } from "./components/AboutPage";
@@ -263,9 +264,11 @@ function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <AppSettingsProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </AppSettingsProvider>
     </BrowserRouter>
   );
 }

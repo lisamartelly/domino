@@ -2,16 +2,23 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import Login from "./Login";
 import { RegisterForm } from "./RegisterForm";
-
-const registrationEnabled = import.meta.env.VITE_REGISTRATION_ENABLED !== "false";
+import { useAppSettings } from "../contexts/AppSettingsContext";
 
 export function AuthPage() {
   const [searchParams] = useSearchParams();
+  const { registrationEnabled, registrationLoaded } = useAppSettings();
+
   const initialView =
-    registrationEnabled && searchParams.get("view") === "register"
+    registrationLoaded && registrationEnabled && searchParams.get("view") === "register"
       ? "register"
       : "login";
   const [currentView, setCurrentView] = useState<"login" | "register">(initialView);
+
+  useEffect(() => {
+    if (registrationLoaded && registrationEnabled && searchParams.get("view") === "register") {
+      setCurrentView("register");
+    }
+  }, [registrationLoaded, registrationEnabled, searchParams]);
 
   useEffect(() => {
     const handleSwitchToLogin = () => setCurrentView("login");
@@ -26,7 +33,11 @@ export function AuthPage() {
       window.removeEventListener("switchToLogin", handleSwitchToLogin);
       window.removeEventListener("switchToRegister", handleSwitchToRegister);
     };
-  }, []);
+  }, [registrationEnabled]);
+
+  if (!registrationLoaded) {
+    return <Login showRegisterLink={false} />;
+  }
 
   return (
     <>
