@@ -124,7 +124,7 @@ export function PublicLayout({
       <footer className="py-12 px-6">
         <div className="max-w-5xl mx-auto bg-cream-50 border-4 border-accent1-500 rounded-3xl p-8 md:p-12">
           {/* Newsletter */}
-          <div className="text-center mb-10">
+          <div id="newsletter" className="text-center mb-10">
             <h3 className="text-2xl font-bold text-accent1-500 mb-2">
               Stay in the Loop
             </h3>

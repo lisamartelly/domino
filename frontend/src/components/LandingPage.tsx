@@ -49,9 +49,11 @@ export function LandingPage() {
           </p>
 
           <a
-            href="https://domino-social-club.beehiiv.com/"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#newsletter"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("newsletter")?.scrollIntoView({ behavior: "smooth" });
+            }}
             className="inline-block bg-accent1-500 hover:bg-accent1-600 text-white font-bold py-3 px-8 rounded-xl transition-colors text-sm tracking-wide uppercase"
           >
             JOIN THE CLUB
