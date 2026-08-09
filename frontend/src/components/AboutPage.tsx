@@ -28,7 +28,7 @@ export function AboutPage() {
               <p>
                 Domino was created to help people find their people in an authentic, 
                 enjoyable way. That means no apps, no swiping! We think the best connections 
-                are made in real life and we want make those easier. 
+                are made in real life and we want to make those easier. 
                 
               </p>
               <p>
@@ -56,7 +56,7 @@ export function AboutPage() {
             </h2>
             <div className="space-y-4 text-charcoal-700 leading-relaxed">
               <p>
-                Hi! We're Marissa and Lisa. We've been scheming together for 15 years (including planning entire parties just so we could invite 1 person) and we thought it was time to bring our skills to the masses.
+                Hi! We're Marissa and Lisa. We've been scheming together for 15 years (including planning entire parties just so we could invite 1 boy) and we thought it was time to bring our skills to the masses.
               </p>
               <p>After all this time, we have cultivated decades of experience in community building, individual and couples therapy, event planning, group facilitation, and, somehow, even more.</p>
               <p>
