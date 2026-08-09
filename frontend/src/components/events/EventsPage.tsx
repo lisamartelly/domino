@@ -46,7 +46,7 @@ export function EventsPage() {
           The best connections happen when we have something in common and
           opportunities to see each other more than once. Our events are
           centered around shared interests, welcoming environments, and genuine
-          conversation — no awkward mixers or endless swiping.
+          conversation.
         </p>
       </div>
 
