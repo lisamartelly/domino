@@ -332,7 +332,7 @@ export function Dashboard() {
                     <h3 className="font-bold text-charcoal-900 text-base mb-1">
                       {event.name}
                     </h3>
-                    <p className="text-sm text-charcoal-500 line-clamp-2 mb-3">
+                    <p className="text-sm text-charcoal-500 line-clamp-2 mb-3 whitespace-pre-line">
                       {event.description}
                     </p>
                     <div className="space-y-0.5 text-sm text-charcoal-500">

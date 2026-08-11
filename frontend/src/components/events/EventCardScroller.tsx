@@ -61,7 +61,7 @@ function EventCard({ event, index }: { event: EventSummaryDto; index: number }) 
         <span
           className={`absolute top-2 left-2 rounded-lg px-2 py-0.5 text-[9px] md:text-[10px] font-bold uppercase tracking-wider ${
             isGathering
-              ? "bg-charcoal-500/80 text-white"
+              ? "bg-cream-50/90 text-accent1-600 ring-1 ring-accent1-400/50"
               : isRecurring
                 ? "bg-charcoal-500/80 text-white"
                 : "bg-cream-50/90 text-charcoal-700"
