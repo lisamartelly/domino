@@ -1,0 +1,1 @@
+ALTER TABLE events ADD COLUMN IF NOT EXISTS featured_on_homepage BOOLEAN NOT NULL DEFAULT false;

@@ -33,6 +33,14 @@ describe('EventsService', () => {
         upsert: jest.fn(),
         findMany: jest.fn(),
       },
+      featuredEvent: {
+        aggregate: jest.fn(),
+        upsert: jest.fn(),
+        deleteMany: jest.fn(),
+        create: jest.fn(),
+        findMany: jest.fn(),
+      },
+      $transaction: jest.fn().mockImplementation((ops: unknown[]) => Promise.all(ops)),
     } as unknown as jest.Mocked<PrismaService>;
 
     stripe = {
@@ -519,7 +527,7 @@ describe('EventsService', () => {
     phase: 'scheduled',
     anticipatedPriceRange: null,
     imageUrl: null,
-    featuredOnHomepage: false,
+    featuredEvent: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     occurrences: [
@@ -632,31 +640,49 @@ describe('EventsService', () => {
       expect(result.kind).toBe('not_found');
     });
 
-    it('should set featured flag on an event', async () => {
+    it('should add event to featured_events table', async () => {
       (prisma.event.findUnique as jest.Mock).mockResolvedValue(mockFullEvent);
-      (prisma.event.update as jest.Mock).mockResolvedValue({
-        ...mockFullEvent,
-        featuredOnHomepage: true,
+      (prisma.featuredEvent.aggregate as jest.Mock).mockResolvedValue({
+        _max: { sortOrder: 1 },
       });
+      (prisma.featuredEvent.upsert as jest.Mock).mockResolvedValue({});
 
       const result = await service.setFeatured(1, true);
 
       expect(result.kind).toBe('success');
-      expect(prisma.event.update).toHaveBeenCalledWith(
+      expect(prisma.featuredEvent.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { featuredOnHomepage: true },
+          where: { eventId: 1 },
+          create: { eventId: 1, sortOrder: 2 },
         }),
       );
+    });
+
+    it('should remove event from featured_events table', async () => {
+      (prisma.event.findUnique as jest.Mock).mockResolvedValue(mockFullEvent);
+      (prisma.featuredEvent.deleteMany as jest.Mock).mockResolvedValue({});
+
+      const result = await service.setFeatured(1, false);
+
+      expect(result.kind).toBe('success');
+      expect(prisma.featuredEvent.deleteMany).toHaveBeenCalledWith({
+        where: { eventId: 1 },
+      });
     });
   });
 
   describe('listFeatured', () => {
     it('should return featured events when they exist', async () => {
-      (prisma.event.findMany as jest.Mock).mockResolvedValue([
+      (prisma.featuredEvent.findMany as jest.Mock).mockResolvedValue([
         {
-          ...mockFullEvent,
-          status: 'published',
-          featuredOnHomepage: true,
+          id: 1,
+          eventId: 1,
+          sortOrder: 0,
+          event: {
+            ...mockFullEvent,
+            status: 'published',
+            _count: { registrations: 0, interests: 0 },
+          },
         },
       ]);
 
@@ -666,18 +692,17 @@ describe('EventsService', () => {
     });
 
     it('should fall back to listPublished when no featured events', async () => {
-      (prisma.event.findMany as jest.Mock)
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([
-          {
-            ...mockFullEvent,
-            status: 'published',
-          },
-        ]);
+      (prisma.featuredEvent.findMany as jest.Mock).mockResolvedValue([]);
+      (prisma.event.findMany as jest.Mock).mockResolvedValue([
+        {
+          ...mockFullEvent,
+          status: 'published',
+          featuredEvent: null,
+        },
+      ]);
 
       const result = await service.listFeatured();
 
-      expect(prisma.event.findMany).toHaveBeenCalledTimes(2);
       expect(result).toHaveLength(1);
     });
   });

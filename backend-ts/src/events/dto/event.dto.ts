@@ -35,7 +35,7 @@ export interface EventDto {
   phase: string;
   anticipatedPriceRange: string | null;
   imageUrl: string | null;
-  featuredOnHomepage: boolean;
+  isFeatured: boolean;
   registrationCount: number;
   interestCount: number;
   occurrences: EventOccurrenceDto[];
@@ -57,7 +57,7 @@ export interface EventSummaryDto {
   phase: string;
   anticipatedPriceRange: string | null;
   imageUrl: string | null;
-  featuredOnHomepage: boolean;
+  isFeatured: boolean;
   registrationCount: number;
   interestCount: number;
   spotsRemaining: number | null;

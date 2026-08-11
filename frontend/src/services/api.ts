@@ -535,7 +535,7 @@ export interface EventDto {
   phase: string;
   anticipatedPriceRange: string | null;
   imageUrl: string | null;
-  featuredOnHomepage: boolean;
+  isFeatured: boolean;
   registrationCount: number;
   interestCount: number;
   occurrences: EventOccurrenceDto[];
@@ -557,7 +557,7 @@ export interface EventSummaryDto {
   phase: string;
   anticipatedPriceRange: string | null;
   imageUrl: string | null;
-  featuredOnHomepage: boolean;
+  isFeatured: boolean;
   registrationCount: number;
   interestCount: number;
   spotsRemaining: number | null;
@@ -701,7 +701,7 @@ export const cancelEvent = async (id: number): Promise<EventDto> => {
 export const setEventFeatured = async (
   id: number,
   featured: boolean
-): Promise<EventDto> => {
+): Promise<{ success: boolean }> => {
   const response = await fetchWithAuth(`/api/events/${id}/feature`, {
     method: "PATCH",
     body: JSON.stringify({ featured }),
@@ -709,6 +709,26 @@ export const setEventFeatured = async (
   if (!response.ok) {
     const err = await response.json();
     throw new Error(err.message || "Failed to update featured status");
+  }
+  return response.json();
+};
+
+export const getFeaturedEventsAdmin = async (): Promise<EventSummaryDto[]> => {
+  const response = await fetchWithAuth("/api/events/admin/featured-order");
+  if (!response.ok) throw new Error("Failed to fetch featured events order");
+  return response.json();
+};
+
+export const reorderFeaturedEvents = async (
+  eventIds: number[]
+): Promise<{ success: boolean }> => {
+  const response = await fetchWithAuth("/api/events/featured-order", {
+    method: "PUT",
+    body: JSON.stringify({ eventIds }),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to reorder featured events");
   }
   return response.json();
 };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import {
   getAllEvents,
   createEvent,
@@ -7,6 +7,8 @@ import {
   unpublishEvent,
   cancelEvent,
   setEventFeatured,
+  getFeaturedEventsAdmin,
+  reorderFeaturedEvents,
   getEventInterests,
   type EventSummaryDto,
   type EventInterestDto,
@@ -167,6 +169,9 @@ export function EventManagePage() {
   const [form, setForm] = useState<CreateEventRequest & { capacity?: number; phase: string }>(
     { ...emptyForm }
   );
+  const [featuredOrder, setFeaturedOrder] = useState<EventSummaryDto[]>([]);
+  const [featuredOrderOpen, setFeaturedOrderOpen] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
 
   const toggleInterests = (eventId: number) => {
     setExpandedInterests((prev) => {
@@ -188,9 +193,16 @@ export function EventManagePage() {
       .finally(() => setLoading(false));
   };
 
+  const loadFeaturedOrder = useCallback(() => {
+    getFeaturedEventsAdmin()
+      .then(setFeaturedOrder)
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     loadEvents();
-  }, []);
+    loadFeaturedOrder();
+  }, [loadFeaturedOrder]);
 
   const resetForm = () => {
     setFormOpen(false);
@@ -298,8 +310,52 @@ export function EventManagePage() {
     try {
       await setEventFeatured(id, !currentlyFeatured);
       loadEvents();
+      loadFeaturedOrder();
     } catch (err: any) {
       setError(err.message);
+    }
+  };
+
+  const dragIdx = useRef<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
+  const handleDragStart = (index: number) => {
+    dragIdx.current = index;
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIdx(index);
+  };
+
+  const handleDrop = (index: number) => {
+    if (dragIdx.current === null || dragIdx.current === index) {
+      dragIdx.current = null;
+      setDragOverIdx(null);
+      return;
+    }
+    const newOrder = [...featuredOrder];
+    const [moved] = newOrder.splice(dragIdx.current, 1);
+    newOrder.splice(index, 0, moved);
+    setFeaturedOrder(newOrder);
+    dragIdx.current = null;
+    setDragOverIdx(null);
+  };
+
+  const handleDragEnd = () => {
+    dragIdx.current = null;
+    setDragOverIdx(null);
+  };
+
+  const handleSaveFeaturedOrder = async () => {
+    setSavingOrder(true);
+    try {
+      await reorderFeaturedEvents(featuredOrder.map((e) => e.id));
+      loadFeaturedOrder();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSavingOrder(false);
     }
   };
 
@@ -326,6 +382,73 @@ export function EventManagePage() {
       {error && (
         <div className="bg-primary-50 border border-primary-200 text-primary-700 rounded-lg px-4 py-3 text-sm">
           {error}
+        </div>
+      )}
+
+      {featuredOrder.length > 0 && (
+        <div className="rounded-2xl border border-accent1-200 bg-accent1-50/30 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setFeaturedOrderOpen(!featuredOrderOpen)}
+            className="w-full flex items-center justify-between p-4 text-left"
+          >
+            <span className="font-semibold text-charcoal-900">
+              ★ Featured Events Order ({featuredOrder.length})
+            </span>
+            <svg
+              className={`w-5 h-5 text-charcoal-400 transition-transform ${featuredOrderOpen ? "rotate-180" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {featuredOrderOpen && (
+            <div className="px-4 pb-4 space-y-1">
+              {featuredOrder.map((event, index) => (
+                <div
+                  key={event.id}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDrop={() => handleDrop(index)}
+                  onDragEnd={handleDragEnd}
+                  className={`flex items-center gap-3 rounded-xl border bg-white px-4 py-2.5 cursor-grab active:cursor-grabbing transition-all ${
+                    dragOverIdx === index
+                      ? "border-accent1-400 shadow-md ring-1 ring-accent1-300"
+                      : "border-charcoal-200"
+                  } ${
+                    dragIdx.current === index ? "opacity-50" : ""
+                  }`}
+                >
+                  <svg className="w-4 h-4 text-charcoal-300 shrink-0" fill="currentColor" viewBox="0 0 16 16">
+                    <circle cx="5" cy="3" r="1.5" />
+                    <circle cx="11" cy="3" r="1.5" />
+                    <circle cx="5" cy="8" r="1.5" />
+                    <circle cx="11" cy="8" r="1.5" />
+                    <circle cx="5" cy="13" r="1.5" />
+                    <circle cx="11" cy="13" r="1.5" />
+                  </svg>
+                  <span className="text-sm font-medium text-charcoal-400 w-6 text-center">
+                    {index + 1}
+                  </span>
+                  <span className="flex-1 text-sm font-medium text-charcoal-900 truncate">
+                    {event.name}
+                  </span>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={handleSaveFeaturedOrder}
+                disabled={savingOrder}
+                className="mt-3 bg-accent1-500 hover:bg-accent1-600 disabled:opacity-50 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors"
+              >
+                {savingOrder ? "Saving..." : "Save Order"}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -623,15 +746,15 @@ export function EventManagePage() {
                   {event.status === "published" && (
                     <button
                       type="button"
-                      onClick={() => handleToggleFeatured(event.id, event.featuredOnHomepage)}
+                      onClick={() => handleToggleFeatured(event.id, event.isFeatured)}
                       className={`text-xs font-medium px-2 py-1 rounded-lg transition-colors ${
-                        event.featuredOnHomepage
+                        event.isFeatured
                           ? "bg-accent1-100 text-accent1-700 hover:bg-accent1-200"
                           : "bg-charcoal-50 text-charcoal-500 hover:bg-charcoal-100"
                       }`}
-                      title={event.featuredOnHomepage ? "Remove from homepage" : "Feature on homepage"}
+                      title={event.isFeatured ? "Remove from homepage" : "Feature on homepage"}
                     >
-                      {event.featuredOnHomepage ? "★ Featured" : "☆ Feature"}
+                      {event.isFeatured ? "★ Featured" : "☆ Feature"}
                     </button>
                   )}
                   {event.status === "draft" && (

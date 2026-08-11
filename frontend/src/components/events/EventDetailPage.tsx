@@ -144,20 +144,13 @@ export function EventDetailPage() {
       {/* Back link */}
       <Link
         to="/events"
-        className="inline-block text-sm text-charcoal-400 hover:text-primary-500 transition-colors mb-6"
+        className="inline-block text-sm text-white hover:text-accent1-500 transition-colors mb-6"
       >
         ← Back to Events
       </Link>
 
       {/* Main card */}
-      <div className="relative">
-        {/* Subtle gradient border */}
-        <div className="absolute -inset-[1px] rounded-[26px] bg-gradient-to-br from-primary-400/20 via-accent1-400/20 to-primary-400/20" />
-
-        <div className="relative rounded-3xl bg-white border border-charcoal-200 shadow-sm overflow-hidden">
-          {/* Accent bar */}
-          <div className="h-[3px] bg-gradient-to-r from-primary-500 via-accent1-500 to-primary-500" />
-
+      <div className="rounded-3xl bg-cream-50 border-4 border-accent1-500 overflow-hidden">
           <div className="p-8">
             {/* Header */}
             <div className="flex items-start justify-between gap-4 mb-6">
@@ -168,19 +161,6 @@ export function EventDetailPage() {
                 <h1 className="text-2xl md:text-3xl font-bold text-charcoal-900">
                   {event.name}
                 </h1>
-                {isGathering ? null : (
-                  <span
-                    className={`inline-block mt-2 text-xs font-semibold px-2.5 py-0.5 rounded-full ${
-                      event.status === "published"
-                        ? "bg-green-100 text-green-800"
-                        : event.status === "cancelled"
-                        ? "bg-primary-100 text-primary-700"
-                        : "bg-charcoal-100 text-charcoal-600"
-                    }`}
-                  >
-                    {event.status}
-                  </span>
-                )}
               </div>
               {!isGathering && (
                 <span
@@ -352,7 +332,6 @@ export function EventDetailPage() {
               </div>
             )}
           </div>
-        </div>
       </div>
 
       {/* Upcoming sessions (only for recurring events) */}
