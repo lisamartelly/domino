@@ -213,15 +213,19 @@ export function EventManagePage() {
 
   const handleEdit = (event: EventSummaryDto) => {
     setEditingId(event.id);
+    let localStart = "";
+    if (event.startTime) {
+      const d = new Date(event.startTime);
+      const pad = (n: number) => String(n).padStart(2, "0");
+      localStart = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
     setForm({
       name: event.name,
       description: event.description,
       location: event.location,
       costCents: event.costCents,
       capacity: event.capacity ?? undefined,
-      startTime: event.startTime
-        ? new Date(event.startTime).toISOString().slice(0, 16)
-        : "",
+      startTime: localStart,
       durationMinutes: event.durationMinutes,
       frequencyType: event.frequencyType,
       frequencyCount: event.frequencyCount,

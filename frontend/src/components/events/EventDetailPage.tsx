@@ -176,7 +176,7 @@ export function EventDetailPage() {
             </div>
 
             {/* Description */}
-            <p className="text-charcoal-600 leading-relaxed mb-8">
+            <p className="text-charcoal-600 leading-relaxed mb-8 whitespace-pre-line">
               {event.description}
             </p>
 

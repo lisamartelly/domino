@@ -80,7 +80,7 @@ export function EventsPage() {
                 <h3 className="font-bold text-charcoal-900 text-lg group-hover:text-accent1-600 transition-colors">
                   {event.name}
                 </h3>
-                <p className="text-sm text-charcoal-500 mt-1.5 line-clamp-2 leading-relaxed">
+                <p className="text-sm text-charcoal-500 mt-1.5 line-clamp-2 leading-relaxed whitespace-pre-line">
                   {event.description}
                 </p>
                 {event.anticipatedPriceRange && (
