@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import { useAppSettings } from "../../contexts/AppSettingsContext";
 import {
   getEvent,
   registerForEvent,
@@ -14,6 +15,14 @@ import { EventInterestForm } from "./EventInterestForm";
 function formatCost(cents: number): string {
   if (cents === 0) return "Free";
   return `$${(cents / 100).toFixed(2)}`;
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rem = minutes % 60;
+  if (rem === 0) return hours === 1 ? "1 hour" : `${hours} hours`;
+  return `${hours}h ${rem}m`;
 }
 
 function formatDateTime(iso: string): string {
@@ -37,6 +46,7 @@ export function EventDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
+  const { registrationEnabled } = useAppSettings();
   const [event, setEvent] = useState<EventDto | null>(null);
   const [myReg, setMyReg] = useState<EventRegistrationDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -232,23 +242,34 @@ export function EventDetailPage() {
                     {event.location}
                   </span>
                 </div>
+                {event.frequencyType === "ONCE" && event.occurrences.length > 0 ? (
+                  <div className="rounded-xl bg-cream-50 p-4">
+                    <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                      Date & Time
+                    </span>
+                    <span className="text-charcoal-900 font-semibold">
+                      {formatDateTime(event.occurrences[0].startTime)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-cream-50 p-4">
+                    <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
+                      Schedule
+                    </span>
+                    <span className="text-charcoal-900 font-semibold">
+                      {frequencyLabels[event.frequencyType] ??
+                        event.frequencyType}
+                      {event.frequencyCount > 1 &&
+                        ` · ${event.frequencyCount} sessions`}
+                    </span>
+                  </div>
+                )}
                 <div className="rounded-xl bg-cream-50 p-4">
                   <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
                     Duration
                   </span>
                   <span className="text-charcoal-900 font-semibold">
-                    {event.durationMinutes} min
-                  </span>
-                </div>
-                <div className="rounded-xl bg-cream-50 p-4">
-                  <span className="text-charcoal-400 text-xs font-medium uppercase tracking-wider block mb-1">
-                    Schedule
-                  </span>
-                  <span className="text-charcoal-900 font-semibold">
-                    {frequencyLabels[event.frequencyType] ??
-                      event.frequencyType}
-                    {event.frequencyCount > 1 &&
-                      ` (${event.frequencyCount} sessions)`}
+                    {formatDuration(event.durationMinutes)}
                   </span>
                 </div>
                 <div className="rounded-xl bg-cream-50 p-4">
@@ -280,7 +301,19 @@ export function EventDetailPage() {
               </div>
             )}
 
-            {!isGathering && event.status === "published" && (
+            {!isGathering && event.status === "published" && !isAuthenticated && !registrationEnabled && (
+              <div>
+                <h2 className="text-lg font-bold text-charcoal-900">
+                  Sign up for this event
+                </h2>
+                <p className="text-charcoal-500 text-sm mb-4">
+                  Fill out the form below and we'll get you set up.
+                </p>
+                <EventInterestForm eventId={event.id} mode="registration" />
+              </div>
+            )}
+
+            {!isGathering && event.status === "published" && (isAuthenticated || registrationEnabled) && (
               <div>
                 {isRegistered ? (
                   <div className="flex items-center gap-4">
@@ -322,15 +355,17 @@ export function EventDetailPage() {
         </div>
       </div>
 
-      {/* Schedule (only for scheduled events) */}
-      {!isGathering && event.occurrences.length > 0 && (
+      {/* Upcoming sessions (only for recurring events) */}
+      {!isGathering && event.frequencyType !== "ONCE" && event.occurrences.length > 0 && (
         <div className="mt-8">
-          <p className="text-primary-500 font-bold text-[11px] tracking-[0.2em] uppercase mb-2">
-            Schedule
-          </p>
-          <h2 className="text-lg font-bold text-charcoal-900 mb-4">
-            Session dates
-          </h2>
+          <div className="mb-4">
+            <p className="text-primary-500 font-bold text-[11px] tracking-[0.2em] uppercase mb-1">
+              {frequencyLabels[event.frequencyType] ?? event.frequencyType} Series
+            </p>
+            <h2 className="text-lg font-bold text-charcoal-900">
+              {event.occurrences.length} Upcoming Sessions
+            </h2>
+          </div>
           <div className="space-y-2">
             {event.occurrences.map((occ, i) => (
               <div
@@ -342,10 +377,10 @@ export function EventDetailPage() {
                 }`}
               >
                 <span className="font-medium">
-                  Session {i + 1}: {formatDateTime(occ.startTime)}
+                  Session {i + 1}
                 </span>
-                <span className="text-charcoal-400">
-                  {formatDateTime(occ.endTime).split(",").pop()?.trim()}
+                <span className={occ.isCancelled ? "text-charcoal-400" : "text-charcoal-900"}>
+                  {formatDateTime(occ.startTime)}
                 </span>
               </div>
             ))}

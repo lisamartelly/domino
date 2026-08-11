@@ -471,20 +471,23 @@ export class EventsService {
 
   async submitInterest(
     eventId: number,
-    data: { email: string; openToRomance: boolean; aboutMe: string },
+    data: { name?: string; email: string; openToRomance: boolean; aboutMe: string },
   ): Promise<ServiceResult<{ submitted: boolean }>> {
     const event = await this.prisma.event.findUnique({ where: { id: eventId } });
     if (!event) return notFound('Event not found.');
     if (event.status !== 'published')
       return invalid('Event is not accepting sign-ups.');
-    if (event.phase !== 'gathering')
-      return invalid('Event is not in the gathering interest phase.');
 
     await this.prisma.eventInterest.upsert({
       where: { eventId_email: { eventId, email: data.email } },
-      update: { openToRomance: data.openToRomance, aboutMe: data.aboutMe },
+      update: {
+        name: data.name ?? null,
+        openToRomance: data.openToRomance,
+        aboutMe: data.aboutMe,
+      },
       create: {
         eventId,
+        name: data.name ?? null,
         email: data.email,
         openToRomance: data.openToRomance,
         aboutMe: data.aboutMe,
@@ -507,6 +510,7 @@ export class EventsService {
       interests.map((i) => ({
         id: i.id,
         eventId: i.eventId,
+        name: i.name,
         email: i.email,
         openToRomance: i.openToRomance,
         aboutMe: i.aboutMe,

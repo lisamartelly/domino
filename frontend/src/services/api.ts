@@ -606,6 +606,7 @@ export interface UpdateEventRequest {
 }
 
 export interface SubmitEventInterestRequest {
+  name?: string;
   email: string;
   openToRomance: boolean;
   aboutMe: string;
@@ -748,6 +749,7 @@ export const getMyEventRegistrations = async (): Promise<
 export interface EventInterestDto {
   id: number;
   eventId: number;
+  name: string | null;
   email: string;
   openToRomance: boolean;
   aboutMe: string;
