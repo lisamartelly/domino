@@ -58,6 +58,24 @@ export class EventsController {
     return this.service.listAll();
   }
 
+  @Get('admin/featured-order')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'SuperDuperAdmin')
+  async listFeaturedAdmin() {
+    return this.service.listFeaturedAdmin();
+  }
+
+  @Put('featured-order')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('Admin', 'SuperDuperAdmin')
+  async reorderFeatured(
+    @Body() body: { eventIds: number[] },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.service.reorderFeatured(body.eventIds);
+    return sendResult(res, result);
+  }
+
   @Get(':id')
   async getById(
     @Param('id', ParseIntPipe) id: number,
@@ -186,4 +204,5 @@ export class EventsController {
     const result = await this.service.setFeatured(id, body.featured);
     return sendResult(res, result);
   }
+
 }

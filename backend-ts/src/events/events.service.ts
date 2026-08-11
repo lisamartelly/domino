@@ -106,10 +106,11 @@ export class EventsService {
       include: {
         occurrences: { orderBy: { startTime: 'asc' } },
         _count: { select: { registrations: true, interests: true } },
+        featuredEvent: true,
       },
     });
 
-    return this.toEventDto(event);
+    return this.toEventDto(event, !!event.featuredEvent);
   }
 
   async update(
@@ -194,10 +195,11 @@ export class EventsService {
       include: {
         occurrences: { orderBy: { startTime: 'asc' } },
         _count: { select: { registrations: true, interests: true } },
+        featuredEvent: true,
       },
     });
 
-    return success(this.toEventDto(updated));
+    return success(this.toEventDto(updated, !!updated.featuredEvent));
   }
 
   async publish(id: number): Promise<ServiceResult<EventDto>> {
@@ -214,10 +216,11 @@ export class EventsService {
       include: {
         occurrences: { orderBy: { startTime: 'asc' } },
         _count: { select: { registrations: true, interests: true } },
+        featuredEvent: true,
       },
     });
 
-    return success(this.toEventDto(updated));
+    return success(this.toEventDto(updated, !!updated.featuredEvent));
   }
 
   async unpublish(id: number): Promise<ServiceResult<EventDto>> {
@@ -232,10 +235,11 @@ export class EventsService {
       include: {
         occurrences: { orderBy: { startTime: 'asc' } },
         _count: { select: { registrations: true, interests: true } },
+        featuredEvent: true,
       },
     });
 
-    return success(this.toEventDto(updated));
+    return success(this.toEventDto(updated, !!updated.featuredEvent));
   }
 
   async cancel(id: number): Promise<ServiceResult<EventDto>> {
@@ -250,54 +254,103 @@ export class EventsService {
       include: {
         occurrences: { orderBy: { startTime: 'asc' } },
         _count: { select: { registrations: true, interests: true } },
+        featuredEvent: true,
       },
     });
 
-    return success(this.toEventDto(updated));
+    return success(this.toEventDto(updated, !!updated.featuredEvent));
   }
 
   async listAll(): Promise<EventSummaryDto[]> {
     const events = await this.prisma.event.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { registrations: true, interests: true } } },
+      include: {
+        _count: { select: { registrations: true, interests: true } },
+        featuredEvent: true,
+      },
     });
 
-    return events.map((e) => this.toSummaryDto(e));
+    return events.map((e) => this.toSummaryDto(e, !!e.featuredEvent));
   }
 
   async setFeatured(
     id: number,
     featured: boolean,
-  ): Promise<ServiceResult<EventDto>> {
+  ): Promise<ServiceResult<{ success: boolean }>> {
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) return notFound('Event not found.');
 
-    const updated = await this.prisma.event.update({
-      where: { id },
-      data: { featuredOnHomepage: featured },
+    if (featured) {
+      const maxOrder = await this.prisma.featuredEvent.aggregate({
+        _max: { sortOrder: true },
+      });
+      await this.prisma.featuredEvent.upsert({
+        where: { eventId: id },
+        update: {},
+        create: { eventId: id, sortOrder: (maxOrder._max.sortOrder ?? -1) + 1 },
+      });
+    } else {
+      await this.prisma.featuredEvent.deleteMany({ where: { eventId: id } });
+    }
+
+    return success({ success: true });
+  }
+
+  async reorderFeatured(
+    eventIds: number[],
+  ): Promise<ServiceResult<{ success: boolean }>> {
+    if (eventIds.length === 0) {
+      await this.prisma.featuredEvent.deleteMany({});
+      return success({ success: true });
+    }
+
+    const events = await this.prisma.event.findMany({
+      where: { id: { in: eventIds } },
+      select: { id: true },
+    });
+    const validIds = new Set(events.map((e) => e.id));
+    const filtered = eventIds.filter((id) => validIds.has(id));
+
+    await this.prisma.$transaction([
+      this.prisma.featuredEvent.deleteMany({}),
+      ...filtered.map((eventId, i) =>
+        this.prisma.featuredEvent.create({
+          data: { eventId, sortOrder: i },
+        }),
+      ),
+    ]);
+
+    return success({ success: true });
+  }
+
+  async listFeaturedAdmin(): Promise<EventSummaryDto[]> {
+    const entries = await this.prisma.featuredEvent.findMany({
+      orderBy: { sortOrder: 'asc' },
       include: {
-        occurrences: { orderBy: { startTime: 'asc' } },
-        _count: { select: { registrations: true, interests: true } },
+        event: {
+          include: { _count: { select: { registrations: true, interests: true } } },
+        },
       },
     });
 
-    return success(this.toEventDto(updated));
+    return entries.map((fe) => this.toSummaryDto(fe.event, true));
   }
 
   // ── User-facing endpoints ──
 
   async listFeatured(): Promise<EventSummaryDto[]> {
-    const featured = await this.prisma.event.findMany({
-      where: {
-        status: 'published',
-        featuredOnHomepage: true,
+    const entries = await this.prisma.featuredEvent.findMany({
+      where: { event: { status: 'published' } },
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        event: {
+          include: { _count: { select: { registrations: true, interests: true } } },
+        },
       },
-      orderBy: { createdAt: 'asc' },
-      include: { _count: { select: { registrations: true, interests: true } } },
     });
 
-    if (featured.length > 0) {
-      return featured.map((e) => this.toSummaryDto(e));
+    if (entries.length > 0) {
+      return entries.map((fe) => this.toSummaryDto(fe.event, true));
     }
 
     return this.listPublished();
@@ -324,10 +377,13 @@ export class EventsService {
         ],
       },
       orderBy: { createdAt: 'asc' },
-      include: { _count: { select: { registrations: true, interests: true } } },
+      include: {
+        _count: { select: { registrations: true, interests: true } },
+        featuredEvent: true,
+      },
     });
 
-    return events.map((e) => this.toSummaryDto(e));
+    return events.map((e) => this.toSummaryDto(e, !!e.featuredEvent));
   }
 
   async getById(id: number): Promise<ServiceResult<EventDto>> {
@@ -336,11 +392,12 @@ export class EventsService {
       include: {
         occurrences: { orderBy: { startTime: 'asc' } },
         _count: { select: { registrations: true, interests: true } },
+        featuredEvent: true,
       },
     });
 
     if (!event) return notFound('Event not found.');
-    return success(this.toEventDto(event));
+    return success(this.toEventDto(event, !!event.featuredEvent));
   }
 
   async register(
@@ -536,7 +593,6 @@ export class EventsService {
     phase: string;
     anticipatedPriceRange: string | null;
     imageUrl: string | null;
-    featuredOnHomepage: boolean;
     createdAt: Date;
     occurrences: Array<{
       id: number;
@@ -545,7 +601,7 @@ export class EventsService {
       isCancelled: boolean;
     }>;
     _count: { registrations: number; interests: number };
-  }): EventDto {
+  }, isFeatured: boolean): EventDto {
     return {
       id: event.id,
       name: event.name,
@@ -561,7 +617,7 @@ export class EventsService {
       phase: event.phase,
       anticipatedPriceRange: event.anticipatedPriceRange,
       imageUrl: event.imageUrl,
-      featuredOnHomepage: event.featuredOnHomepage,
+      isFeatured,
       registrationCount: event._count.registrations,
       interestCount: event._count.interests,
       occurrences: event.occurrences.map((o): EventOccurrenceDto => ({
@@ -589,9 +645,8 @@ export class EventsService {
     phase: string;
     anticipatedPriceRange: string | null;
     imageUrl: string | null;
-    featuredOnHomepage: boolean;
     _count: { registrations: number; interests: number };
-  }): EventSummaryDto {
+  }, isFeatured: boolean): EventSummaryDto {
     return {
       id: event.id,
       name: event.name,
@@ -607,7 +662,7 @@ export class EventsService {
       phase: event.phase,
       anticipatedPriceRange: event.anticipatedPriceRange,
       imageUrl: event.imageUrl,
-      featuredOnHomepage: event.featuredOnHomepage,
+      isFeatured,
       registrationCount: event._count.registrations,
       interestCount: event._count.interests,
       spotsRemaining:

@@ -392,7 +392,6 @@ model Event {
   phase                String  @default("scheduled") @db.VarChar(50)
   anticipatedPriceRange String? @map("anticipated_price_range") @db.VarChar(100)
   imageUrl             String? @map("image_url") @db.VarChar(500)
-  featuredOnHomepage   Boolean @default(false) @map("featured_on_homepage")
   createdByUserId      Int     @map("created_by_user_id")
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
@@ -401,10 +400,24 @@ model Event {
   occurrences   EventOccurrence[]
   registrations EventRegistration[]
   interests     EventInterest[]
+  featuredEvent FeaturedEvent?
 
   @@index([createdByUserId])
   @@index([status])
   @@map("events")
+}
+
+model FeaturedEvent {
+  id        Int      @id @default(autoincrement())
+  eventId   Int      @unique @map("event_id")
+  sortOrder Int      @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([sortOrder])
+  @@map("featured_events")
 }
 
 model EventOccurrence {
