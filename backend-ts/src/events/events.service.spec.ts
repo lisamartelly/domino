@@ -710,20 +710,26 @@ describe('EventsService', () => {
       expect(result.kind).toBe('invalid');
     });
 
-    it('should reject non-gathering phase event', async () => {
+    it('should accept interest for scheduled-phase event', async () => {
       (prisma.event.findUnique as jest.Mock).mockResolvedValue({
         ...mockFullEvent,
         status: 'published',
         phase: 'scheduled',
       });
+      (prisma.eventInterest.upsert as jest.Mock).mockResolvedValue({});
 
       const result = await service.submitInterest(1, {
+        name: 'Jane Doe',
         email: 'test@example.com',
         openToRomance: false,
         aboutMe: 'Hi',
       });
 
-      expect(result.kind).toBe('invalid');
+      expect(result.kind).toBe('success');
+      if (result.kind === 'success') {
+        expect(result.value.submitted).toBe(true);
+      }
+      expect(prisma.eventInterest.upsert).toHaveBeenCalled();
     });
 
     it('should upsert interest for gathering-phase event', async () => {
@@ -763,6 +769,7 @@ describe('EventsService', () => {
         {
           id: 1,
           eventId: 1,
+          name: 'Test User',
           email: 'user@test.com',
           openToRomance: false,
           aboutMe: 'Hi there',

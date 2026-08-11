@@ -117,6 +117,7 @@ function EventInterestPanel({ eventId }: { eventId: number }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-charcoal-100">
+              <th className="text-left font-semibold text-charcoal-600 px-4 py-2">Name</th>
               <th className="text-left font-semibold text-charcoal-600 px-4 py-2">Email</th>
               <th className="text-left font-semibold text-charcoal-600 px-4 py-2">Open to Romance</th>
               <th className="text-left font-semibold text-charcoal-600 px-4 py-2">About</th>
@@ -126,6 +127,7 @@ function EventInterestPanel({ eventId }: { eventId: number }) {
           <tbody>
             {interests.map((interest) => (
               <tr key={interest.id} className="border-b border-charcoal-100 last:border-b-0">
+                <td className="px-4 py-2 text-charcoal-900">{interest.name || "—"}</td>
                 <td className="px-4 py-2 text-charcoal-900">{interest.email}</td>
                 <td className="px-4 py-2">
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${

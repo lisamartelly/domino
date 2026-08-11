@@ -1,0 +1,1 @@
+ALTER TABLE event_interests ADD COLUMN IF NOT EXISTS name VARCHAR(255);

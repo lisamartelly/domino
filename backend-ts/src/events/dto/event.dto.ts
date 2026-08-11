@@ -196,6 +196,7 @@ export class UpdateEventRequest {
 export interface EventInterestDto {
   id: number;
   eventId: number;
+  name: string | null;
   email: string;
   openToRomance: boolean;
   aboutMe: string;
@@ -203,6 +204,12 @@ export interface EventInterestDto {
 }
 
 export class SubmitEventInterestRequest {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  name?: string;
+
   @IsEmail()
   @MaxLength(256)
   email: string;

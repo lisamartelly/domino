@@ -3,9 +3,11 @@ import { submitEventInterest } from "../../services/api";
 
 interface EventInterestFormProps {
   eventId: number;
+  mode?: "gathering" | "registration";
 }
 
-export function EventInterestForm({ eventId }: EventInterestFormProps) {
+export function EventInterestForm({ eventId, mode = "gathering" }: EventInterestFormProps) {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [openToRomance, setOpenToRomance] = useState<boolean | null>(null);
   const [aboutMe, setAboutMe] = useState("");
@@ -13,8 +15,13 @@ export function EventInterestForm({ eventId }: EventInterestFormProps) {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isRegistration = mode === "registration";
+
   const canSubmit =
-    email.trim() !== "" && openToRomance !== null && aboutMe.trim() !== "";
+    email.trim() !== "" &&
+    openToRomance !== null &&
+    aboutMe.trim() !== "" &&
+    (!isRegistration || name.trim() !== "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,6 +31,7 @@ export function EventInterestForm({ eventId }: EventInterestFormProps) {
     setError(null);
     try {
       await submitEventInterest(eventId, {
+        name: name.trim() || undefined,
         email: email.trim(),
         openToRomance: openToRomance!,
         aboutMe: aboutMe.trim(),
@@ -40,10 +48,12 @@ export function EventInterestForm({ eventId }: EventInterestFormProps) {
     return (
       <div className="rounded-2xl bg-green-50 border border-green-200 p-8 text-center">
         <p className="text-green-800 font-bold text-lg mb-2">
-          Thanks for your interest!
+          {isRegistration ? "You're signed up!" : "Thanks for your interest!"}
         </p>
         <p className="text-green-700 text-sm">
-          We'll reach out when this event is scheduled.
+          {isRegistration
+            ? "We'll send event details to your email."
+            : "We'll reach out when this event is scheduled."}
         </p>
       </div>
     );
@@ -51,6 +61,25 @@ export function EventInterestForm({ eventId }: EventInterestFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <label
+          htmlFor="interest-name"
+          className="block text-sm font-semibold text-charcoal-900 mb-1.5"
+        >
+          Name{!isRegistration && <span className="font-normal text-charcoal-400 ml-1">(optional)</span>}
+        </label>
+        <input
+          id="interest-name"
+          type="text"
+          required={isRegistration}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={255}
+          placeholder="Your name"
+          className="w-full rounded-xl border border-charcoal-200 bg-white px-4 py-2.5 text-sm text-charcoal-900 placeholder:text-charcoal-400 focus:outline-none focus:ring-2 focus:ring-accent1-500 focus:border-transparent"
+        />
+      </div>
+
       <div>
         <label
           htmlFor="interest-email"
@@ -131,7 +160,11 @@ export function EventInterestForm({ eventId }: EventInterestFormProps) {
         disabled={!canSubmit || submitting}
         className="w-full bg-accent1-500 hover:bg-accent1-600 disabled:opacity-50 text-white font-bold py-3 px-8 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-accent1-500/25"
       >
-        {submitting ? "Submitting..." : "I'm Interested"}
+        {submitting
+          ? "Submitting..."
+          : isRegistration
+          ? "Sign Up"
+          : "I'm Interested"}
       </button>
     </form>
   );
